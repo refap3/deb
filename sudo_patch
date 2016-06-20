@@ -1,0 +1,4 @@
+apt-get install sudo -y
+adduser debian8 sudo 
+cp sudoers /etc/sudoers
+
