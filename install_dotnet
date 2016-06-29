@@ -1,0 +1,7 @@
+  257  sudo apt-get install curl libunwind8 gettext -y
+  258  cd ~
+  260  mkdir dotnet
+  261  cd dotnet/
+  264  curl -sSL -o dotnet.tar.gz https://go.microsoft.com/fwlink/?LinkId=809130
+  266  sudo mkdir -p /opt/dotnet && sudo tar zxf dotnet.tar.gz  -C /opt/dotnet
+  267  sudo ln -s /opt/dotnet /usr/local/bin
