@@ -7,7 +7,7 @@ install_xxx install feature xxx
 
 remaining files are sources
 
-# notes on dotnet: 
+### notes on dotnet: 
 
 do this to run Hello World as .net CONSOLE app:
 
