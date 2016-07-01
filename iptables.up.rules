@@ -3,6 +3,6 @@
 :INPUT ACCEPT [630:43043]
 :FORWARD ACCEPT [0:0]
 :OUTPUT ACCEPT [523:39529]
--A INPUT -p tcp -m tcp --dport 111 -j DROP
+-A INPUT -p tcp -m tcp --dport 111 -j REJECT
 COMMIT
 # Completed on Fri Jun 17 17:33:44 2016
