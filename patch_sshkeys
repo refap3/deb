@@ -1,0 +1,2 @@
+mkdir ~/.ssh
+cp ~/deb/authorized_keys ~/.ssh
