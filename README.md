@@ -20,3 +20,5 @@ dotnet new
 dotnet restore
 
 dotnet run
+
+if you got the same FW version on windows -- copy the project.dll and project.runtimeconfig.json file to Linux and run with dotnet project.dll!
