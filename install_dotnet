@@ -5,6 +5,6 @@
   curl -sSL -o dotnet.tar.gz https://go.microsoft.com/fwlink/?LinkID=835021
   sudo mkdir -p /opt/dotnet && sudo tar zxf dotnet.tar.gz  -C /opt/dotnet
   rm dotnet.tar.gz
-  sudo rm  /opt/dotnet/dotnet /usr/local/bin
+  sudo rm /usr/local/bin/dotnet
   sudo ln -s /opt/dotnet/dotnet /usr/local/bin
   echo "check README.md 4 details on how to get Hello World running!"
