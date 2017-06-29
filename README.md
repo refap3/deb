@@ -28,7 +28,7 @@ if you got the same FW version on windows -- copy the project.dll and project.ru
 
 see readME_DEBACO_setup.txt
 
-### check iptables with nmap fromsame or another host: this is the expected result:
+### check iptables with nmap from same or another host -- this is the expected result:
 
 
 sudo nmap 78.xx.xx.xx
