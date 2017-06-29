@@ -34,6 +34,8 @@ see readME_DEBACO_setup.txt
 sudo nmap 78.xx.xx.xx
 
 PORT    STATE    SERVICE
+
 22/tcp  open     ssh
+
 111/tcp filtered rpcbind
 
