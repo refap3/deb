@@ -27,3 +27,13 @@ if you got the same FW version on windows -- copy the project.dll and project.ru
 ### notes on debACOxx machine setup:
 
 see readME_DEBACO_setup.txt
+
+### check iptables with nmap fromsame or another host: this is the expected result:
+
+
+sudo nmap 78.xx.xx.xx
+
+PORT    STATE    SERVICE
+22/tcp  open     ssh
+111/tcp filtered rpcbind
+
