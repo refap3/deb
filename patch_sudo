@@ -1,4 +1,12 @@
 apt-get install sudo -y
 adduser debian8 sudo 
 cp sudoers /etc/sudoers
+
+# with 'visudo' command as root append netx 2 lines to /etc/sudoers
+# this will alloww access to sudo w/o password 
+
+### %sudo ALL=NOPASSWD: ALL
+### %admin ALL=(ALL) NOPASSWD: NOPASSWD: ALL
+
+
 service sudo restart
