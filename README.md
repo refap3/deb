@@ -4,6 +4,7 @@ various patches 4 debian 8 etc.
 patch_xxx patches feature xxx
 install_xxx install feature xxx
 
+new: ssh with key only // and password
 
 remaining files are sources
 
