@@ -4,7 +4,7 @@ while true; do
     echo "Menu:"
     echo "1. Option 1: Install SHH keys"
     echo "2. Option 2: Enable login with KEY only"
-    echo "3. Option 3: Enable lofin with password"
+    echo "3. Option 3: Enable login with password"
     echo "4. Option 4: enable sudo"
     echo "5. Option 5: enable sudo Ubuntu"
     echo "6. Exit"
