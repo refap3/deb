@@ -1,0 +1,45 @@
+#!/bin/bash
+
+while true; do
+    echo "Menu:"
+    echo "1. Option 1: Install SHH keys"
+    echo "2. Option 2: Enable login with KEY only"
+    echo "3. Option 3: Enable lofin with password"
+    echo "4. Option 4: enable sudo"
+    echo "5. Option 5: enable sudo Ubuntu"
+    echo "6. Exit"
+
+    read -p "Enter your choice: " choice
+
+    case $choice in
+        1)
+            echo "Install SSH keys ..."
+            ./patch_sshkeys
+            ;;
+        2)
+            echo "Login key only ..."
+            ./patch_ssh_only
+            ;;
+        3)
+            echo "Login password ..."
+            ./patch_ssh_password
+            ;;
+        4)
+            echo "sudo on ..."
+            ./patch_sudo
+            ;;
+        5)
+            echo "UBUNTU sudo on ..."
+            ./ub_patch_sudo
+            ;;
+        6)
+            echo "Exiting..."
+            break
+            ;;
+        *)
+            echo "Invalid choice. Please try again."
+            ;;
+    esac
+
+    echo
+done
