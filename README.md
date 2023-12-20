@@ -1,6 +1,8 @@
 # deb
 various patches 4 debian 8 etc.
 
+new menu script for main functions
+
 patch_xxx patches feature xxx
 install_xxx install feature xxx
 
