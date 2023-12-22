@@ -1,4 +1,5 @@
 #!/bin/bash
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 while true; do
     echo "Menu:"
@@ -14,23 +15,23 @@ while true; do
     case $choice in
         1)
             echo "Install SSH keys ..."
-            ./patch_sshkeys
+            "${SCRIPT_DIR}/patch_sshkeys"
             ;;
         2)
             echo "Login key only ..."
-            ./patch_ssh_only
+            "${SCRIPT_DIR}/patch_ssh_only"
             ;;
         3)
             echo "Login password ..."
-            ./patch_ssh_password
+            "${SCRIPT_DIR}/patch_ssh_password"
             ;;
         4)
             echo "sudo on ..."
-            ./patch_sudo
+            "${SCRIPT_DIR}/patch_sudo"
             ;;
         5)
             echo "UBUNTU sudo on ..."
-            ./ub_patch_sudo
+            "${SCRIPT_DIR}/ub_patch_sudo"
             ;;
         6)
             echo "Exiting..."
