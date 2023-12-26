@@ -1,0 +1,46 @@
+# burial place for snippets running in JuiceSSH and Terminius (ipad)#
+# snippets are stored on github refap3
+
+# hass routing as a menu since the filesystem is read only ..... 
+
+#!/bin/bash
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+while true; do
+    echo "Menu:"
+    echo "1. Show NW configuration "
+    echo "2. Change Gateway to .2 (Smart Home)"
+    echo "3. Change Gateway to .1 (Normal mode)"
+    echo "4. REBOOT HOST -- beware"
+    echo "6. Exit"
+
+    read -p "Enter your choice: " choice
+
+    case $choice in
+        1)
+            echo "Show NW config ..."
+            nmcli connection show  "Supervisor eth0" | grep ipv4
+            ;;
+        2)
+            echo "Change GW to .2 ..."
+            nmcli connection modify  "Supervisor eth0" ipv4.gateway 192.168.1.2
+            ;;
+        3)
+            echo "Change GW to .1 ..."
+            nmcli connection modify  "Supervisor eth0" ipv4.gateway 192.168.1.1
+            ;;
+        4)
+            echo "REBOOT host..."
+            ha host reboot
+            ;;
+        6)
+            echo "Exiting..."
+            break
+            ;;
+        *)
+            echo "Invalid choice. Please try again."
+            ;;
+    esac
+
+    echo
+done
