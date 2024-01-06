@@ -8,7 +8,7 @@ while true; do
     echo "3. Option 3: Enable login with password"
     echo "4. Option 4: enable sudo"
     echo "5. Option 5: enable sudo Ubuntu"
-    echo "6. Exit"
+    echo "6. Exit now"
 
     read -p "Enter your choice: " choice
 
