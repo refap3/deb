@@ -51,6 +51,11 @@ sudo apt install git -y
 
 git config --global credential.helper store
 
+git config --global user.email "refap3@gmail.com"
+
+git config --global user.name "lecc oreshheFROMap3"
+
+
 #
 
 mkdir deb
