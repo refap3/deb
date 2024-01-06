@@ -48,6 +48,9 @@ PORT    STATE    SERVICE
 sudo apt update
 
 sudo apt install git -y
+
+git config --global credential.helper store
+
 #
 
 mkdir deb
