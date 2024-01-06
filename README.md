@@ -46,12 +46,16 @@ PORT    STATE    SERVICE
 #----------------------------------------------
 
 sudo apt update
+
 sudo apt install git -y
 #
 
 mkdir deb
+
 cd ~
+
 git clone https://github.com/refap3/deb 
+
 ./deb/menu
 
 
