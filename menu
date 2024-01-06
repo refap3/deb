@@ -8,7 +8,8 @@ while true; do
     echo "3. Option 3: Enable login with password"
     echo "4. Option 4: enable sudo"
     echo "5. Option 5: enable sudo Ubuntu"
-    echo "6. Exit now"
+    echo "6. Option 6: github stuff "
+    echo "9. Exit now"
 
     read -p "Enter your choice: " choice
 
@@ -34,6 +35,12 @@ while true; do
             "${SCRIPT_DIR}/ub_patch_sudo"
             ;;
         6)
+            echo "Github stuff ..."
+            git config --global credential.helper store
+            git config --global user.email "refap3@gmail.com"
+            git config --global user.name "lecc oreshheFROMap3"
+            ;;
+        9)
             echo "Exiting..."
             break
             ;;
