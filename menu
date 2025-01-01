@@ -1,14 +1,58 @@
 #!/bin/bash
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REBOOT_SCRIPT_PATH="/home/pi/reboot_daily.sh"
+CRON_JOB="0 2 * * * $REBOOT_SCRIPT_PATH"
+
+# Function to set up the daily reboot
+setup_daily_reboot() {
+    echo "Setting up the daily reboot process..."
+
+    # Create the reboot script
+    echo "Creating the reboot script at $REBOOT_SCRIPT_PATH..."
+    cat <<EOF > $REBOOT_SCRIPT_PATH
+#!/bin/bash
+# Shell script to reboot the Raspberry Pi
+
+sudo /sbin/reboot
+EOF
+
+    # Make the script executable
+    chmod +x $REBOOT_SCRIPT_PATH
+
+    # Add the cron job
+    echo "Adding the cron job to schedule the reboot..."
+    (crontab -l 2>/dev/null | grep -v "$REBOOT_SCRIPT_PATH"; echo "$CRON_JOB") | crontab -
+
+    echo "Daily reboot process set up successfully. The Raspberry Pi will reboot at 2:00 AM daily."
+}
+
+# Function to remove the daily reboot
+remove_daily_reboot() {
+    echo "Removing the daily reboot process..."
+
+    # Remove the script
+    if [ -f "$REBOOT_SCRIPT_PATH" ]; then
+        rm -f "$REBOOT_SCRIPT_PATH"
+        echo "Deleted the reboot script at $REBOOT_SCRIPT_PATH."
+    else
+        echo "Reboot script not found at $REBOOT_SCRIPT_PATH."
+    fi
+
+    # Remove the cron job
+    (crontab -l 2>/dev/null | grep -v "$REBOOT_SCRIPT_PATH") | crontab -
+
+    echo "Daily reboot process removed successfully."
+}
 
 while true; do
     echo "Menu:"
-    echo "1. Option 1: Install SHH keys"
+    echo "1. Option 1: Install SSH keys"
     echo "2. Option 2: Enable login with KEY only"
     echo "3. Option 3: Enable login with password"
-    echo "4. Option 4: enable sudo"
-    echo "5. Option 5: enable sudo Ubuntu"
-    echo "6. Option 6: github stuff "
+    echo "4. Option 4: Enable sudo"
+    echo "5. Option 5: Enable sudo Ubuntu"
+    echo "6. Option 6: Github stuff"
+    echo "7. Option 7: Manage Daily Reboot (setup or remove)"
     echo "9. Exit now"
 
     read -p "Enter your choice: " choice
@@ -27,7 +71,7 @@ while true; do
             "${SCRIPT_DIR}/patch_ssh_password"
             ;;
         4)
-            echo "sudo on ..."
+            echo "Sudo on ..."
             "${SCRIPT_DIR}/patch_sudo"
             ;;
         5)
@@ -39,6 +83,23 @@ while true; do
             git config --global credential.helper store
             git config --global user.email "refap3@gmail.com"
             git config --global user.name "lecc oreshheFROMap3"
+            ;;
+        7)
+            echo "Manage Daily Reboot:"
+            echo "1. Set up daily reboot at 2:00 AM"
+            echo "2. Remove daily reboot"
+            read -p "Enter your choice: " reboot_choice
+            case $reboot_choice in
+                1)
+                    setup_daily_reboot
+                    ;;
+                2)
+                    remove_daily_reboot
+                    ;;
+                *)
+                    echo "Invalid choice. Returning to main menu."
+                    ;;
+            esac
             ;;
         9)
             echo "Exiting..."
