@@ -1,5 +1,5 @@
 #!/bin/bash
-
+echo "must EDIT 4 parameters before use !!!"
 # Define variables
 REMOTE_SHARE="//192.168.1.116/video/MEDIA-STACK"
 LOCAL_MOUNT="/mnt/synology"
