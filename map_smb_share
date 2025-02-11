@@ -1,0 +1,40 @@
+#!/bin/bash
+
+# Define variables
+REMOTE_SHARE="//192.168.1.116/video/MEDIA-STACK"
+LOCAL_MOUNT="/mnt/synology"
+USERNAME="mediastack"
+PASSWORD="S E C  R E TT!!"
+
+# Install required package
+sudo apt update && sudo apt install -y cifs-utils
+
+# Create the local mount directory if it doesn't exist
+sudo mkdir -p $LOCAL_MOUNT
+
+# Create a secure credentials file
+CREDENTIALS_FILE="/etc/smbcredentials"
+
+echo "username=$USERNAME" | sudo tee $CREDENTIALS_FILE > /dev/null
+echo "password=$PASSWORD" | sudo tee -a $CREDENTIALS_FILE > /dev/null
+
+# Secure the credentials file
+sudo chmod 600 $CREDENTIALS_FILE
+
+# Add the mount entry to /etc/fstab if it does not already exist
+FSTAB_ENTRY="$REMOTE_SHARE $LOCAL_MOUNT cifs credentials=$CREDENTIALS_FILE,vers=3.0,uid=$(id -u pi),gid=$(id -g pi),file_mode=0777,dir_mode=0777,_netdev,x-systemd.automount 0 0"
+
+if ! grep -q "$REMOTE_SHARE" /etc/fstab; then
+    echo "$FSTAB_ENTRY" | sudo tee -a /etc/fstab > /dev/null
+fi
+
+# Remount all filesystems and verify the mount
+sudo mount -a
+mount | grep $LOCAL_MOUNT
+
+# Check if the mount was successful
+if mountpoint -q $LOCAL_MOUNT; then
+    echo "✅ SMB share successfully mounted at $LOCAL_MOUNT"
+else
+    echo "❌ Failed to mount SMB share. Check logs with 'journalctl -xe'"
+fi
