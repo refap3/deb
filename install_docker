@@ -13,7 +13,7 @@ git clone https://github.com/refap3/deb
 #create ssh keys etc
 deb/menu
 
-# docker and portainer
+# docker 
 
 curl -fsSL https://get.docker.com -o get-docker.sh 
 sudo sh get-docker.sh 
