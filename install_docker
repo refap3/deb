@@ -1,0 +1,26 @@
+### docker version to install ntopng influxdb and grafana ---
+## run grafana and influxdb either on host or private network, see below:
+
+#preps
+sudo apt-get update -y && sudo apt-get upgrade -y
+sudo apt install git -y
+git config --global credential.helper store
+git config --global user.email "refap3@gmail.com"
+git config --global user.name "lecc oreshheFROMap3"
+mkdir deb
+cd ~
+git clone https://github.com/refap3/deb
+#create ssh keys etc
+deb/menu
+
+# docker and portainer
+
+curl -fsSL https://get.docker.com -o get-docker.sh 
+sudo sh get-docker.sh 
+sudo apt install docker-compose -y
+sudo usermod -aG docker pi
+# apply new group membership
+echo "raspberry" | su -l pi
+
+# logout HERE -- only iff above does not werk!
+
