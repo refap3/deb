@@ -69,6 +69,14 @@ git clone https://github.com/refap3/deb
 #
 
 There is a install_docker and a docker-compose.yaml file for ntopng, influxdb aand grafana (+ portainer)
+do this: 
+
+~/deb/install_docker
+cd ~/deb/
+docker-compose up -d
+
+
+
 
 
 
