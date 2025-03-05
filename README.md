@@ -72,7 +72,9 @@ There is a install_docker and a docker-compose.yaml file for ntopng, influxdb aa
 do this: 
 
 ~/deb/install_docker
+
 cd ~/deb/
+
 docker-compose up -d
 
 
