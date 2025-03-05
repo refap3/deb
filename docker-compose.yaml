@@ -1,0 +1,55 @@
+version: '3.8'
+
+volumes:
+  portainer_data:
+  influxdb_data:
+  grafana_data:
+
+networks:
+  monitoring:
+    driver: bridge
+
+services:
+  portainer:
+    image: portainer/portainer-ce:latest
+    container_name: portainer
+    restart: always
+    ports:
+      - "8000:8000"
+      - "9443:9443"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - portainer_data:/data
+
+  ntopng:
+    image: ntop/ntopng_arm64.dev:latest
+    container_name: ntopng
+    restart: unless-stopped
+    network_mode: "host"
+    command: ["-i", "eth0", "--community"]
+    volumes:
+      - ./ntopng.license:/etc/ntopng.license:ro
+
+  influxdb:
+    image: influxdb:1.8
+    container_name: influxdb
+    restart: unless-stopped
+    networks:
+      - monitoring
+    ports:
+      - "8086:8086"
+    volumes:
+      - influxdb_data:/var/lib/influxdb
+
+  grafana:
+    image: grafana/grafana
+    container_name: grafana
+    restart: unless-stopped
+    networks:
+      - monitoring
+    ports:
+      - "4000:3000"
+    environment:
+      - GF_SERVER_HTTP_PORT=3000
+    volumes:
+      - grafana_data:/var/lib/grafana
