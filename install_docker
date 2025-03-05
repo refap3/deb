@@ -21,6 +21,6 @@ sudo apt install docker-compose -y
 sudo usermod -aG docker pi
 # apply new group membership
 echo "raspberry" | su -l pi
-
+echo "logout / login -- above did not werk!"
 # logout HERE -- only iff above does not werk!
 
