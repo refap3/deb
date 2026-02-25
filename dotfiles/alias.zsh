@@ -31,13 +31,9 @@ alias cls='clear'
 # List all files in current directory created/modified today
 dt() { find . -maxdepth 1 -newermt "$(date +%Y-%m-%d)" ! -name "." | sort; }
 
-# Show the definition of an alias or function (aalias <name>), variables expanded
+# Show the definition of an alias or function (aalias <name>)
 aalias() {
-    local output
-    output=$(builtin alias "$1" 2>/dev/null || declare -f "$1" 2>/dev/null) || { echo "$1: not found"; return; }
-    echo "$output" \
-        | sed "s|\$PI_KEY|${PI_KEY}|g" \
-        | sed "s|\$DOTFILES|${DOTFILES}|g"
+    builtin alias "$1" 2>/dev/null || declare -f "$1" || echo "$1: not found"
 }
 
 # List only directories in current directory
