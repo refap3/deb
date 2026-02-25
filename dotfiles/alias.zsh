@@ -1,5 +1,5 @@
 # macOS/zsh equivalents of ALIAS.DAT
-# Source this file from ~/.zshrc with: source ~/Downloads/aliases.zsh
+# Source this file from ~/.zshrc with: source ~/Downloads/alias.zsh
 
 # Navigation
 alias up='cd ..'          # up = cd ..
@@ -35,6 +35,9 @@ dt() { find . -maxdepth 1 -newermt "$(date +%Y-%m-%d)" ! -name "." | sort; }
 def() {
     alias "$1" 2>/dev/null || declare -f "$1" || echo "$1: not found"
 }
+
+# List only directories in current directory
+alias ddd='ls -d */'
 
 # Find file recursively from current directory (ff <partial name>)
 ff()  { find . -not -path "*/.*" -iname "*$1*" 2>/dev/null; }   # skips hidden files/dirs

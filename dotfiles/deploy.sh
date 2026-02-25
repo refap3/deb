@@ -118,7 +118,7 @@ else
     mkdir -p "$CUSTOM_DIR"
 
     # Symlink every dotfile into the custom dir
-    for f in .zshrc .bashrc .gitalias.zsh aliases.zsh raspberryalias.zsh jump.sh; do
+    for f in .zshrc .bashrc .gitalias.zsh alias.zsh raspberryalias.zsh jump.sh; do
         ln -sf "$REPO_DIR/$f" "$CUSTOM_DIR/$f"
         echo "  $CUSTOM_DIR/$f → $REPO_DIR/$f"
     done
