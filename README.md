@@ -163,6 +163,24 @@ gital       # sources ~/.gitalias.zsh and confirms
 gh          # list all git aliases
 ```
 
+Key git aliases (auto-detect `main` or `master`):
+
+| Command | Description |
+|---------|-------------|
+| `gs` | `git status` + fetch + diff against default branch |
+| `gps` | Push to default branch with tags |
+| `gdm` | Diff current state vs default branch on origin |
+| `gl` | Log with graph and all branches |
+| `glo` | Log one-line |
+| `ga` | `git add` |
+| `gc` | `git commit -m` |
+| `gac` | `git commit -a -m` |
+| `gch` | `git checkout` |
+| `gb` | `git branch` |
+| `gpl` | `git pull` |
+| `gdi` | `git diff` |
+| `gst` / `gstp` | Stash / stash pop |
+
 **Shell management:**
 
 | Command | Description |
