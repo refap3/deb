@@ -1,10 +1,10 @@
 # Raspberry Pi SSH/SFTP aliases for zsh
 # Converted from raspberryalias.dat (PuTTY/WinSCP → ssh/sftp)
 #
-# Keys: id_rsa / id_rsa.pub in the dotfiles folder (OpenSSH format)
+# Key: ~/.ssh/id_rsa (standard SSH location, independent of dotfiles path)
 
 DOTFILES="${DOTFILES:-$HOME/Library/Mobile Documents/com~apple~CloudDocs/dotfiles}"
-PI_KEY="$DOTFILES/id_rsa"
+PI_KEY="$HOME/.ssh/id_rsa"
 
 # iCloud Drive does not preserve file permissions, so fix the key before every use
 _pikey() { chmod 600 "$PI_KEY" 2>/dev/null; }
