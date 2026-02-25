@@ -140,4 +140,24 @@ else
 fi
 
 echo ""
+
+# ---------------------------------------------------------------------------
+# SSH key — copy id_rsa to ~/.ssh/id_rsa if not already present
+# ---------------------------------------------------------------------------
+SSH_KEY="$HOME/.ssh/id_rsa"
+ICLOUD_KEY="$HOME/Library/Mobile Documents/com~apple~CloudDocs/dotfiles/id_rsa"
+
+if [[ -f "$SSH_KEY" ]]; then
+    echo "SSH key already exists at $SSH_KEY — skipping."
+elif [[ -f "$ICLOUD_KEY" ]]; then
+    mkdir -p "$HOME/.ssh"
+    chmod 700 "$HOME/.ssh"
+    cp "$ICLOUD_KEY" "$SSH_KEY"
+    chmod 600 "$SSH_KEY"
+    echo "SSH key copied: $ICLOUD_KEY → $SSH_KEY"
+else
+    echo "No SSH key found at $ICLOUD_KEY — skipping. Copy id_rsa to ~/.ssh/id_rsa manually."
+fi
+
+echo ""
 echo "Done. Open a new shell (or: source ~/$RC_FILE) to activate."
