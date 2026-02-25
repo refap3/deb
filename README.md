@@ -90,7 +90,7 @@ The `dotfiles/` directory contains a portable shell configuration that works on 
 |------|---------|
 | `.zshrc` | zsh config — sets `DOTFILES`, loads alias files, defines `j` jump function |
 | `.bashrc` | bash config — sets `DOTFILES` via `readlink`, loads alias files |
-| `.git_aliases` | Git shortcuts (load on demand with `gital`) |
+| `gitalias.zsh` | Git shortcuts (load on demand with `gital`) |
 | `aliases.zsh` | General aliases (`up`, `home`, etc.) |
 | `raspberryalias.zsh` | SSH/SFTP aliases for Raspberry Pi hosts |
 | `jump.sh` | Directory jump function (`j`) |
