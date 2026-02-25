@@ -119,6 +119,16 @@ cd ~/deb/dotfiles
 
 The script backs up any existing regular file (e.g. `~/.zshrc.bak.20250225_151900`) before creating symlinks, and is self-locating — works from any clone path.
 
+### Usage after deploy
+
+**Git aliases** are not loaded automatically (keeps startup fast). Load them on demand:
+
+```bash
+gital       # sources ~/.gitalias.zsh and confirms
+```
+
+Once loaded, use `gh` to list all available git aliases.
+
 
 
 
