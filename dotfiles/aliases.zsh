@@ -25,6 +25,17 @@ alias move='mv'
 alias rd='rmdir'
 alias md='mkdir'
 
+# Clear screen
+alias cls='clear'
+
+# List all files in current directory created/modified today
+dt() { find . -maxdepth 1 -newermt "$(date +%Y-%m-%d)" ! -name "." | sort; }
+
+# Show the definition of an alias or function (def <name>)
+def() {
+    alias "$1" 2>/dev/null || declare -f "$1" || echo "$1: not found"
+}
+
 # Find file recursively from current directory (ff <partial name>)
 ff()  { find . -not -path "*/.*" -iname "*$1*" 2>/dev/null; }   # skips hidden files/dirs
 fff() { find . -iname "*$1*" 2>/dev/null; }                      # includes hidden (dot) files/dirs
