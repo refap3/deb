@@ -12,12 +12,12 @@ for _f in "$DOTFILES"/*alias*.zsh; do [ -f "$_f" ] && source "$_f"; done
 unset _f
 
 gital() {
-    source ~/.gitalias.zsh
+    source $DOTFILES/gitalias.zsh
     echo "Git aliases loaded!"
 }
 
 gh() {
-    grep '^alias' ~/.gitalias.zsh | sort
+    grep '^alias' $DOTFILES/gitalias.zsh | sort
 }
 
 # Reload all aliases fresh

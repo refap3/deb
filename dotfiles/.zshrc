@@ -8,13 +8,13 @@ unset _f
 
 # Delayed Git Alias Loader
 function gital() {
-    source ~/.gitalias.zsh
+    source $DOTFILES/gitalias.zsh
     echo "Git aliases loaded! (Use 'gh' for help if you have a helper function, or just use the aliases)"
 }
 
 # Optional: Helper function to list these specific aliases (similar to your 'gh')
 function gh() {
-    cat ~/.gitalias.zsh | grep '^alias' | sort
+    cat $DOTFILES/gitalias.zsh | grep '^alias' | sort
 }
 # Reload all aliases fresh
 function allal() {
