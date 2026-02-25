@@ -11,4 +11,9 @@ unset _t
 for _f in "$DOTFILES"/*alias*.zsh; do [ -f "$_f" ] && source "$_f"; done
 unset _f
 
+gital() {
+    source ~/.gitalias.zsh
+    echo "Git aliases loaded!"
+}
+
 source ~/.jump.sh
