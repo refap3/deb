@@ -1,5 +1,5 @@
 # deb
-various patches 4 debian 8 etc.
+Various patches and setup scripts for Debian, plus shell dotfiles for zsh/bash.
 
 new menu script for main functions
 
@@ -68,14 +68,56 @@ git clone https://github.com/refap3/deb
 
 #
 
-There is a install_docker, docker-compose, portainer and a docker-compose.yaml file for ntopng, influxdb and grafana 
-do this: 
+There is a install_docker, docker-compose, portainer and a docker-compose.yaml file for ntopng, influxdb and grafana
+do this:
 
 sudo ~/deb/install_docker
 
 cd ~/deb/
 
 docker-compose up -d
+
+
+---
+
+## Shell dotfiles (zsh / bash)
+
+The `dotfiles/` directory contains a portable shell configuration that works on macOS and Linux.
+
+**Files:**
+
+| File | Purpose |
+|------|---------|
+| `.zshrc` | zsh config — sets `DOTFILES`, loads alias files, defines `j` jump function |
+| `.bashrc` | bash config — sets `DOTFILES` via `readlink`, loads alias files |
+| `.git_aliases` | Git shortcuts (load on demand with `gital`) |
+| `aliases.zsh` | General aliases (`up`, `home`, etc.) |
+| `raspberryalias.zsh` | SSH/SFTP aliases for Raspberry Pi hosts |
+| `jump.sh` | Directory jump function (`j`) |
+| `deploy.sh` | Install script — handles 4 variants: zsh/bash × home-dir/custom-dir |
+
+### Deploy
+
+```bash
+git clone https://github.com/refap3/deb ~/deb
+cd ~/deb/dotfiles
+./deploy.sh [--shell zsh|bash] [--home | --path <dir>]
+```
+
+**Examples:**
+
+```bash
+# zsh — symlink rc and helpers directly from ~/
+./deploy.sh --shell zsh --home
+
+# bash — use a custom dotfiles dir (e.g. ~/dots), then link from ~/
+./deploy.sh --shell bash --path ~/dots
+
+# auto-detects current shell if --shell is omitted
+./deploy.sh --home
+```
+
+The script backs up any existing regular file (e.g. `~/.zshrc.bak.20250225_151900`) before creating symlinks, and is self-locating — works from any clone path.
 
 
 
