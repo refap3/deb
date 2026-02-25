@@ -136,6 +136,25 @@ The script backs up any existing regular file (e.g. `~/.zshrc.bak.20250225_15190
 | `ff <name>` | Find file by name (skips hidden dirs) |
 | `fff <name>` | Find file by name (includes hidden) |
 
+**Raspberry Pi aliases** (loaded automatically, key read from `~/.ssh/id_rsa`):
+
+| Command | Description |
+|---------|-------------|
+| `rap <octet>` | SSH → `pi@192.168.1.<octet>` with key |
+| `rapp <octet>` | SSH → `pi@192.168.1.<octet>` without key |
+| `rapv <host>` | SSH → `pi@<host>.ssb8.local` with key |
+| `rappv <host>` | SSH → `pi@<host>.ssb8.local` without key |
+| `rapa <host>` | SSH → `pi@<host>.pi.hole` with key |
+| `rappa <host>` | SSH → `pi@<host>.pi.hole` without key |
+| `raphav` | SSH → `root@hassio.ssb8.local` port 22222 with key |
+| `raphaa` | SSH → `root@hassio.pi.hole` port 22222 with key |
+| `raw <octet>` | SFTP → `pi@192.168.1.<octet>` with key |
+| `rawv <host>` | SFTP → `pi@<host>.ssb8.local` with key |
+| `rawa <host>` | SFTP → `pi@<host>.pi.hole` with key |
+| `rawpv <host>` | SFTP → `pi@<host>.ssb8.local` without key |
+| `rawpa <host>` | SFTP → `pi@<host>.pi.hole` without key |
+| `rah` | Show this alias reference |
+
 **Git aliases** are not loaded automatically (keeps startup fast). Load them on demand:
 
 ```bash
