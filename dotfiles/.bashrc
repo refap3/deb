@@ -16,6 +16,10 @@ gital() {
     echo "Git aliases loaded!"
 }
 
+gh() {
+    grep '^alias' ~/.gitalias.zsh | sort
+}
+
 # Reload all aliases fresh
 allal() {
     unalias -a
