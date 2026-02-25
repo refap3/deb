@@ -26,6 +26,10 @@ rappa() { ssh pi@$1.pi.hole; }                           # rappa <host>  — wit
 raphav() { _pikey; ssh -p 22222 -i "$PI_KEY" root@hassio.ssb8.local; }
 raphaa() { _pikey; ssh -p 22222 -i "$PI_KEY" root@hassio.pi.hole; }
 
+# --- Copy SSH keys to remote host (password auth — use before key auth is set up) ---
+racp()  { scp ~/.ssh/id_rsa.pub pi@192.168.1.$1:~/.ssh/; }                                              # racp  <octet>  — copy public key
+rack()  { scp ~/.ssh/id_rsa pi@192.168.1.$1:~/.ssh/ && ssh pi@192.168.1.$1 "chmod 600 ~/.ssh/id_rsa"; } # rack  <octet>  — copy private key + fix perms
+
 # --- SFTP: pi user (WinSCP equivalent) ---
 raw()   { _pikey; sftp -i "$PI_KEY" pi@192.168.1.$1; }  # raw  <octet>  — with key
 rawv()  { _pikey; sftp -i "$PI_KEY" pi@$1.ssb8.local; } # rawv  <host>  — with key
