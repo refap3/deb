@@ -1,10 +1,16 @@
 # Git Aliases (Converted from PowerShell)
 
+# Detect default branch (main or master)
+_git_default_branch() {
+    git rev-parse --verify main &>/dev/null && echo main || echo master
+}
+
 # Complex function for 'gs' (Status + Fetch + Diff Main)
 gs() {
-    git status -s "$@"
-    git fetch "$@"
-    git diff main origin/main "$@"
+    local branch=$(_git_default_branch)
+    git status -s
+    git fetch
+    git diff "$branch" "origin/$branch"
 }
 
 # Standard Aliases
@@ -28,9 +34,9 @@ alias grh='git reset HEAD --hard'
 alias gre='git reset'
 alias gdt='git difftool'
 alias gpl='git pull'
-alias gps='git push origin main --tags'
+gps() { local b=$(_git_default_branch); git push origin "$b" --tags "$@"; }
 alias gf='git fetch'
-alias gdm='git diff main origin/main'
+gdm() { local b=$(_git_default_branch); git diff "$b" "origin/$b" "$@"; }
 alias gk='gitk'
 alias gr='git remote -v'
 alias grs='git remote set-url origin'
