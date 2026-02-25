@@ -155,6 +155,8 @@ The script backs up any existing regular file (e.g. `~/.zshrc.bak.20250225_15190
 | `rawpv <host>` | SFTP → `pi@<host>.ssb8.local` without key |
 | `rawpa <host>` | SFTP → `pi@<host>.pi.hole` without key |
 | `rah` | Show this alias reference |
+| `racpub <octet>` | Copy `id_rsa.pub` to `pi@192.168.1.<octet>:~/.ssh/` |
+| `racpri <octet>` | Copy `id_rsa` to `pi@192.168.1.<octet>:~/.ssh/` and `chmod 600` |
 
 **Git aliases** are not loaded automatically (keeps startup fast). Load them on demand:
 
