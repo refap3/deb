@@ -91,7 +91,7 @@ The `dotfiles/` directory contains a portable shell configuration that works on 
 | `.zshrc` | zsh config — sets `DOTFILES`, loads alias files, defines `j` jump function |
 | `.bashrc` | bash config — sets `DOTFILES` via `readlink`, loads alias files |
 | `gitalias.zsh` | Git shortcuts (load on demand with `gital`) |
-| `alias.zsh` | General aliases (`up`, `home`, `cls`, `dt`, `def`, `ddd`, etc.) |
+| `alias.zsh` | General aliases (`up`, `home`, `cls`, `dt`, `aalias`, `ddd`, etc.) |
 | `raspberryalias.zsh` | SSH/SFTP aliases for Raspberry Pi hosts |
 | `jump.sh` | Directory jump function (`j`) |
 | `deploy.sh` | Install script — handles 4 variants: zsh/bash × home-dir/custom-dir |
@@ -130,7 +130,7 @@ The script backs up any existing regular file (e.g. `~/.zshrc.bak.20250225_15190
 | `cls` | Clear screen |
 | `dt` | List files created/modified today in current dir |
 | `ddd` | List only directories in current dir |
-| `def <name>` | Show definition of any alias or function |
+| `aalias <name>` | Show definition of any alias or function |
 | `x` | Open current directory in Finder |
 | `np <file>` | Open file in TextEdit |
 | `ia` | Network info (`ifconfig`) |

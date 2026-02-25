@@ -31,8 +31,8 @@ alias cls='clear'
 # List all files in current directory created/modified today
 dt() { find . -maxdepth 1 -newermt "$(date +%Y-%m-%d)" ! -name "." | sort; }
 
-# Show the definition of an alias or function (def <name>)
-def() {
+# Show the definition of an alias or function (aalias <name>)
+aalias() {
     alias "$1" 2>/dev/null || declare -f "$1" || echo "$1: not found"
 }
 
