@@ -162,6 +162,15 @@ gital       # sources ~/.gitalias.zsh and confirms
 gh          # list all git aliases
 ```
 
+**Shell management:**
+
+| Command | Description |
+|---------|-------------|
+| `allal` | Unload all aliases and reload fresh from alias files |
+| `sl` | Unload git aliases and reload shell profile |
+| `gital` | Load git aliases on demand |
+| `gh` | List all loaded git aliases |
+
 
 
 
