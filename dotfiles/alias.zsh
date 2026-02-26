@@ -25,6 +25,9 @@ alias move='mv'
 alias rd='rmdir'
 alias md='mkdir'
 
+# claude 
+alias cdsp='claude --dangerously-skip-permissions'
+
 # Clear screen
 alias cls='clear'
 
