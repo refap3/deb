@@ -1,5 +1,5 @@
 # deb
-Various patches and setup scripts for Debian, plus shell dotfiles for zsh/bash.
+Various patches and setup scripts for Debian.
 
 new menu script for main functions
 
@@ -80,117 +80,10 @@ docker-compose up -d
 
 ---
 
-## Shell dotfiles (zsh / bash)
+## Shell dotfiles
 
-The `dotfiles/` directory contains a portable shell configuration that works on macOS and Linux.
-
-**Files:**
-
-| File | Purpose |
-|------|---------|
-| `.zshrc` | zsh config — sets `DOTFILES`, loads alias files, defines `j` jump function |
-| `.bashrc` | bash config — sets `DOTFILES` via `readlink`, loads alias files |
-| `gitalias.zsh` | Git shortcuts (load on demand with `gital`) |
-| `alias.zsh` | General aliases (`up`, `home`, `cls`, `dt`, `aalias`, `ddd`, etc.) |
-| `raspberryalias.zsh` | SSH/SFTP aliases for Raspberry Pi hosts |
-| `jump.sh` | Directory jump function (`j`) |
-| `deploy.sh` | Install script — handles 4 variants: zsh/bash × home-dir/custom-dir |
-
-### Deploy
-
-```bash
-git clone https://github.com/refap3/deb ~/deb
-cd ~/deb/dotfiles
-./deploy.sh [--shell zsh|bash] [--home | --path <dir>]
-```
-
-**Examples:**
-
-```bash
-# zsh — symlink rc and helpers directly from ~/
-./deploy.sh --shell zsh --home
-
-# bash — use a custom dotfiles dir (e.g. ~/dots), then link from ~/
-./deploy.sh --shell bash --path ~/dots
-
-# auto-detects current shell if --shell is omitted
-./deploy.sh --home
-```
-
-The script backs up any existing regular file (e.g. `~/.zshrc.bak.20250225_151900`) before creating symlinks, and is self-locating — works from any clone path.
-
-### Usage after deploy
-
-**General aliases** (loaded automatically on shell start):
-
-| Command | Description |
-|---------|-------------|
-| `up` | `cd ..` |
-| `home` / `hom` | `cd ~` |
-| `cls` | Clear screen |
-| `dt` | List files created/modified today in current dir |
-| `ddd` | List only directories in current dir |
-| `aalias <name>` | Show definition of any alias or function |
-| `x` | Open current directory in Finder |
-| `np <file>` | Open file in TextEdit |
-| `ia` | Network info (`ifconfig`) |
-| `ff <name>` | Find file by name (skips hidden dirs) |
-| `fff <name>` | Find file by name (includes hidden) |
-
-**Raspberry Pi aliases** (loaded automatically, key read from `~/.ssh/id_rsa`):
-
-| Command | Description |
-|---------|-------------|
-| `rap <octet>` | SSH → `pi@192.168.1.<octet>` with key |
-| `rapp <octet>` | SSH → `pi@192.168.1.<octet>` without key |
-| `rapv <host>` | SSH → `pi@<host>.ssb8.local` with key |
-| `rappv <host>` | SSH → `pi@<host>.ssb8.local` without key |
-| `rapa <host>` | SSH → `pi@<host>.pi.hole` with key |
-| `rappa <host>` | SSH → `pi@<host>.pi.hole` without key |
-| `raphav` | SSH → `root@hassio.ssb8.local` port 22222 with key |
-| `raphaa` | SSH → `root@hassio.pi.hole` port 22222 with key |
-| `raw <octet>` | SFTP → `pi@192.168.1.<octet>` with key |
-| `rawv <host>` | SFTP → `pi@<host>.ssb8.local` with key |
-| `rawa <host>` | SFTP → `pi@<host>.pi.hole` with key |
-| `rawpv <host>` | SFTP → `pi@<host>.ssb8.local` without key |
-| `rawpa <host>` | SFTP → `pi@<host>.pi.hole` without key |
-| `rah` | Show this alias reference |
-| `racpub <octet>` | Copy `id_rsa.pub` to `pi@192.168.1.<octet>:~/.ssh/` |
-| `racpri <octet>` | Copy `id_rsa` to `pi@192.168.1.<octet>:~/.ssh/` and `chmod 600` |
-
-**Git aliases** are not loaded automatically (keeps startup fast). Load them on demand:
-
-```bash
-gital       # sources ~/.gitalias.zsh and confirms
-gh          # list all git aliases
-```
-
-Key git aliases (auto-detect `main` or `master`):
-
-| Command | Description |
-|---------|-------------|
-| `gs` | `git status` + fetch + diff against default branch |
-| `gps` | Push to default branch with tags |
-| `gdm` | Diff current state vs default branch on origin |
-| `gl` | Log with graph and all branches |
-| `glo` | Log one-line |
-| `ga` | `git add` |
-| `gc` | `git commit -m` |
-| `gac` | `git commit -a -m` |
-| `gch` | `git checkout` |
-| `gb` | `git branch` |
-| `gpl` | `git pull` |
-| `gdi` | `git diff` |
-| `gst` / `gstp` | Stash / stash pop |
-
-**Shell management:**
-
-| Command | Description |
-|---------|-------------|
-| `allal` | Unload all aliases and reload fresh from alias files |
-| `sl` | Unload git aliases and reload shell profile |
-| `gital` | Load git aliases on demand |
-| `gh` | List all loaded git aliases |
+Shell dotfiles (zsh/bash aliases, deploy script, etc.) have moved to a dedicated repo:
+→ https://github.com/refap3/alias
 
 
 
