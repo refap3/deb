@@ -1,4 +1,5 @@
-#!/bin/bash
+#!/usr/bin/env bash
+set -e
 echo "must EDIT 4 parameters before use !!!"
 # Define variables
 REMOTE_SHARE="//192.168.1.116/video/MEDIA-STACK"
@@ -30,7 +31,7 @@ fi
 
 # Remount all filesystems and verify the mount
 sudo mount -a
-mount | grep $LOCAL_MOUNT
+mount | grep "$LOCAL_MOUNT" || true
 
 # Check if the mount was successful
 if mountpoint -q $LOCAL_MOUNT; then

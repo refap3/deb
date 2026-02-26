@@ -1,4 +1,6 @@
-  sudo apt-get install curl libunwind8 gettext -y
+#!/bin/sh
+set -e
+sudo apt-get install curl libunwind8 gettext -y
   cd ~
   mkdir dotnet
   cd dotnet/

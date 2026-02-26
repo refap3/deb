@@ -1,1 +1,3 @@
-sudo echo "%sudo ALL=NOPASSWD: ALL" >> /etc/sudoers
+#!/bin/sh
+set -e
+echo "%sudo ALL=NOPASSWD: ALL" | sudo tee -a /etc/sudoers

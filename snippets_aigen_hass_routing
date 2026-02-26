@@ -1,11 +1,9 @@
-# burial place for snippets running in JuiceSSH and Terminius (ipad)#
+#!/usr/bin/env bash
+# burial place for snippets running in JuiceSSH and Terminius (ipad)
 # snippets are stored on github refap3
-
 # does NOT werk at all WTF either the modem is dead or something else is in the A...
-
-# hass routing as a menu since the filesystem is read only ..... 
-
-#!/bin/bash
+# hass routing as a menu since the filesystem is read only .....
+set -e
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 while true; do

@@ -1,3 +1,5 @@
+#!/bin/sh
+set -e
 ### docker version to install ntopng influxdb and grafana ---
 ## run grafana and influxdb either on host or private network, see below:
 

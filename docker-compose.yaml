@@ -20,7 +20,7 @@ services:
       - ./ntopng.license:/etc/ntopng.license:ro
 
   influxdb:
-    image: influxdb:1.8
+    image: influxdb:2.7
     container_name: influxdb
     restart: unless-stopped
     networks:
@@ -28,10 +28,10 @@ services:
     ports:
       - "8086:8086"
     volumes:
-      - influxdb_data:/var/lib/influxdb
+      - influxdb_data:/var/lib/influxdb2
 
   grafana:
-    image: grafana/grafana
+    image: grafana/grafana:11.0.0
     container_name: grafana
     restart: unless-stopped
     networks:

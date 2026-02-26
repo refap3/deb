@@ -1,4 +1,5 @@
-#!/bin/bash
+#!/usr/bin/env bash
+set -e
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REBOOT_SCRIPT_PATH="/home/pi/reboot_daily.sh"
 CRON_JOB="0 2 * * * $REBOOT_SCRIPT_PATH"

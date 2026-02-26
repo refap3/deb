@@ -1,8 +1,12 @@
-sudo ln -s /usr/bin/nodejs  /usr/bin/node
-wget https://github.com/node-red/node-red/releases/download/0.16.2/node-red-0.16.2.zip
-unzip node-red-0.16.2.zip 
-cd node-red-0.16.2/
-npm install 
-echo "start node red"
-node red.js
+#!/bin/sh
+set -e
+# Install Node-RED using the official installer (installs Node.js too)
+# See: https://nodered.org/docs/getting-started/raspberrypi
+echo "Running official Node-RED installer..."
+bash <(curl -sL https://raw.githubusercontent.com/node-red/linux-installers/master/deb/update-nodejs-and-nodered)
 
+# Enable and start the service
+sudo systemctl enable nodered.service
+sudo systemctl start nodered.service
+
+echo "Node-RED installed. Access at http://localhost:1880"

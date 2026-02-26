@@ -1,1 +1,5 @@
-sudo sed -i -E 's/#?PasswordAuthentication yes/PasswordAuthentication no/' /etc/ssh/sshd_config; sudo service ssh restart 
+#!/bin/sh
+set -e
+sudo sed -i -E 's/#?PasswordAuthentication yes/PasswordAuthentication no/' /etc/ssh/sshd_config
+sudo service ssh restart
+
