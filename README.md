@@ -32,6 +32,7 @@ git -C ~/deb fetch --depth=1 origin master && git -C ~/deb reset --hard origin/m
 Wipe the repo and re-run the installer:
 
 ```bash
+cd ~
 rm -rf ~/deb
 bash <(curl -fsSL https://raw.githubusercontent.com/refap3/deb/master/install.sh)
 ```
