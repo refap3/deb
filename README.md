@@ -7,7 +7,36 @@ Various patches and setup scripts for Debian / Raspberry Pi.
 - `git`, `sudo`, `curl` installed
 - Internet access for install scripts
 
-## Quick start
+## Install (one line)
+
+```bash
+bash <(curl -fsSL https://raw.githubusercontent.com/refap3/deb/master/install.sh)
+```
+
+Clones a shallow copy (no history) into `~/deb`. Then run `~/deb/menu`.
+
+## Update
+
+```bash
+dbu
+```
+
+Pulls the latest changes and strips old history. `dbu` is available once the alias repo is deployed. Or manually:
+
+```bash
+git -C ~/deb fetch --depth=1 origin master && git -C ~/deb reset --hard origin/master && git -C ~/deb gc --prune=all
+```
+
+## Test a clean install
+
+Wipe the repo and re-run the installer:
+
+```bash
+rm -rf ~/deb
+bash <(curl -fsSL https://raw.githubusercontent.com/refap3/deb/master/install.sh)
+```
+
+## Quick start (manual)
 
 ```bash
 sudo apt update && sudo apt install git -y
