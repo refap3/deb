@@ -10,7 +10,7 @@ Various patches and setup scripts for Debian / Raspberry Pi.
 ## Install (one line)
 
 ```bash
-bash <(curl -fsSL https://raw.githubusercontent.com/refap3/deb/master/install.sh)
+curl -fsSL https://raw.githubusercontent.com/refap3/deb/master/install.sh | bash
 ```
 
 Clones a shallow copy (no history) into `~/deb`. Then run `~/deb/menu`.
@@ -34,7 +34,7 @@ Wipe the repo and re-run the installer:
 ```bash
 cd ~
 rm -rf ~/deb
-bash <(curl -fsSL https://raw.githubusercontent.com/refap3/deb/master/install.sh)
+curl -fsSL https://raw.githubusercontent.com/refap3/deb/master/install.sh | bash
 ```
 
 ## Quick start (manual)
