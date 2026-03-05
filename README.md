@@ -92,6 +92,7 @@ git clone https://github.com/refap3/deb
 
 | Script | Description |
 |--------|-------------|
+| `disk_speed_test` | 128 MB read/write benchmark on the current directory; rates result 1–10. Alias: `dst` |
 | `map_smb_share` | Mounts a CIFS/SMB share and adds it to `/etc/fstab` — **edit variables at the top before running** |
 
 ---
