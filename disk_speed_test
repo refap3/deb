@@ -6,6 +6,8 @@ test_file="$test_dir/.diskspeed_tmp_$$"
 size_mb=128
 os_type="$(uname)"
 
+trap 'rm -f "$test_file"' EXIT
+
 echo "Disk speed test on: $test_dir"
 echo "Test size: ${size_mb} MB"
 echo ""
@@ -44,8 +46,6 @@ else
 fi
 read_mbps=$(_parse_dd_speed "$read_dd")
 echo "${read_mbps} MB/s"
-
-rm -f "$test_file"
 
 awk -v w="$write_mbps" -v r="$read_mbps" 'BEGIN{
     avg=(w+r)/2
