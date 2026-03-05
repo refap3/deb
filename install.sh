@@ -15,3 +15,13 @@ echo "Cloning deb repo into $DEST ..."
 git clone --depth 1 https://github.com/refap3/deb "$DEST"
 
 echo "Done. Run $DEST/menu to continue setup."
+
+if [ ! -d "$HOME/alias" ]; then
+    read -p "Also install alias (shell dotfiles)? [y/N] " install_alias
+    if [[ "$install_alias" =~ ^[Yy]$ ]]; then
+        echo "Cloning alias repo into ~/alias ..."
+        git clone --depth 1 https://github.com/refap3/alias ~/alias
+        ~/alias/deploy.sh
+        echo "Alias installed. Run: source ~/.zshrc"
+    fi
+fi

@@ -47,14 +47,17 @@ remove_daily_reboot() {
 
 while true; do
     echo "Menu:"
-    echo "1. Option 1: Install SSH keys"
-    echo "2. Option 2: Enable login with KEY only"
-    echo "3. Option 3: Enable login with password"
-    echo "4. Option 4: Enable sudo"
-    echo "5. Option 5: Enable sudo Ubuntu"
-    echo "6. Option 6: Github stuff"
-    echo "7. Option 7: Manage Daily Reboot (setup or remove)"
-    echo "9. Exit now"
+    echo "1. Install SSH keys"
+    echo "2. Enable login with KEY only"
+    echo "3. Enable login with password"
+    echo "4. Remove SSH password warning"
+    echo "5. Enable sudo (Debian)"
+    echo "6. Enable sudo (Ubuntu)"
+    echo "7. Github credential helper"
+    echo "8. Install Docker stack (ntopng + InfluxDB + Grafana)"
+    echo "9. Manage Daily Reboot (setup or remove)"
+    echo "a. Install alias (shell dotfiles)"
+    echo "0. Exit"
 
     read -p "Enter your choice: " choice
 
@@ -72,20 +75,29 @@ while true; do
             "${SCRIPT_DIR}/patch_ssh_password"
             ;;
         4)
+            echo "Removing SSH password warning ..."
+            "${SCRIPT_DIR}/patch_remove_password_warning"
+            ;;
+        5)
             echo "Sudo on ..."
             "${SCRIPT_DIR}/patch_sudo"
             ;;
-        5)
+        6)
             echo "UBUNTU sudo on ..."
             "${SCRIPT_DIR}/ub_patch_sudo"
             ;;
-        6)
-            echo "Github stuff ..."
-            git config --global credential.helper store
-            git config --global user.email "refap3@gmail.com"
-            git config --global user.name "lecc oreshheFROMap3"
-            ;;
         7)
+            echo "Setting up git credential helper ..."
+            git config --global credential.helper store
+            echo "Done. Next push will prompt for credentials and cache them."
+            ;;
+        8)
+            echo "Installing Docker ..."
+            sudo "${SCRIPT_DIR}/install_docker"
+            echo "Docker installed. Log out and back in for group to apply, then:"
+            echo "  cd ${SCRIPT_DIR} && docker-compose up -d"
+            ;;
+        9)
             echo "Manage Daily Reboot:"
             echo "1. Set up daily reboot at 2:00 AM"
             echo "2. Remove daily reboot"
@@ -102,7 +114,13 @@ while true; do
                     ;;
             esac
             ;;
-        9)
+        a)
+            echo "Installing alias (shell dotfiles) ..."
+            git clone https://github.com/refap3/alias ~/alias
+            ~/alias/deploy.sh
+            echo "Done. Run: source ~/.zshrc"
+            ;;
+        0)
             echo "Exiting..."
             break
             ;;
