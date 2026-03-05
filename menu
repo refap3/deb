@@ -45,19 +45,103 @@ remove_daily_reboot() {
     echo "Daily reboot process removed successfully."
 }
 
+# Function to run a disk R/W speed test on the current volume
+disk_speed_test() {
+    local test_dir
+    test_dir="$(pwd)"
+    local test_file="$test_dir/.diskspeed_tmp_$$"
+    local size_mb=128
+    local os_type
+    os_type="$(uname)"
+
+    echo "Disk speed test on: $test_dir"
+    echo "Test size: ${size_mb} MB"
+    echo ""
+
+    # Inner helper: extract MB/s from dd stderr output
+    _parse_dd_speed() {
+        local out="$1"
+        if [[ "$os_type" == "Darwin" ]]; then
+            # macOS: "134217728 bytes transferred in 0.14 secs (962466892 bytes/sec)"
+            echo "$out" | awk '/bytes\/sec/{
+                match($0, /\(([0-9]+) bytes\/sec\)/, a)
+                printf "%.1f", a[1]/1048576
+            }'
+        else
+            # Linux: "134217728 bytes (134 MB) copied, 0.12 s, 1.1 GB/s"
+            echo "$out" | awk '/copied/{
+                n=split($0,a," "); val=a[n-1]; unit=a[n]
+                if(unit=="GB/s") val=val*1024
+                else if(unit=="kB/s") val=val/1024
+                printf "%.1f", val
+            }'
+        fi
+    }
+
+    # Write test
+    echo -n "Write: "
+    local write_dd
+    if [[ "$os_type" == "Darwin" ]]; then
+        write_dd=$(dd if=/dev/zero of="$test_file" bs=1m count=$size_mb 2>&1) || true
+    else
+        write_dd=$(dd if=/dev/zero of="$test_file" bs=1M count=$size_mb conv=fsync 2>&1) || true
+    fi
+    local write_mbps
+    write_mbps=$(_parse_dd_speed "$write_dd")
+    echo "${write_mbps} MB/s"
+
+    # Read test
+    echo -n "Read:  "
+    local read_dd
+    if [[ "$os_type" == "Darwin" ]]; then
+        read_dd=$(dd if="$test_file" of=/dev/null bs=1m 2>&1) || true
+    else
+        read_dd=$(dd if="$test_file" of=/dev/null bs=1M 2>&1) || true
+    fi
+    local read_mbps
+    read_mbps=$(_parse_dd_speed "$read_dd")
+    echo "${read_mbps} MB/s"
+
+    rm -f "$test_file"
+
+    # Rate and summarise
+    awk -v w="$write_mbps" -v r="$read_mbps" 'BEGIN{
+        avg=(w+r)/2
+        if(avg>=500)      rating=10
+        else if(avg>=300) rating=9
+        else if(avg>=180) rating=8
+        else if(avg>=120) rating=7
+        else if(avg>=80)  rating=6
+        else if(avg>=60)  rating=5
+        else if(avg>=40)  rating=4
+        else if(avg>=20)  rating=3
+        else if(avg>=10)  rating=2
+        else              rating=1
+
+        if(rating<=2)      desc="Very slow  (USB 2.0 / SD card)"
+        else if(rating<=4) desc="Slow       (mechanical HDD / USB 2.0)"
+        else if(rating<=6) desc="Moderate   (HDD / entry-level SATA SSD)"
+        else if(rating<=8) desc="Good       (SATA SSD)"
+        else               desc="Excellent  (NVMe SSD)"
+
+        printf "\nAverage: %.1f MB/s\nRating:  %d/10 — %s\n", avg, rating, desc
+    }'
+}
+
 while true; do
     echo "Menu:"
-    echo "1. Install SSH keys"
-    echo "2. Enable login with KEY only"
-    echo "3. Enable login with password"
-    echo "4. Remove SSH password warning"
-    echo "5. Enable sudo (Debian)"
-    echo "6. Enable sudo (Ubuntu)"
-    echo "7. Github credential helper"
-    echo "8. Install Docker stack (ntopng + InfluxDB + Grafana)"
-    echo "9. Manage Daily Reboot (setup or remove)"
-    echo "a. Install alias (shell dotfiles)"
-    echo "0. Exit"
+      echo "1. Install SSH keys"
+      echo "2. Enable login with KEY only"
+      echo "3. Enable login with password"
+      echo "4. Remove SSH password warning"
+      echo "5. Enable sudo (Debian)"
+      echo "6. Enable sudo (Ubuntu)"
+      echo "7. Github credential helper"
+      echo "8. Install Docker stack (ntopng + InfluxDB + Grafana)"
+      echo "9. Manage Daily Reboot (setup or remove)"
+      echo "a. Install alias (shell dotfiles)"
+      echo "b. Disk Speed Test"
+      echo "0. Exit"
 
     read -p "Enter your choice: " choice
 
@@ -114,13 +198,16 @@ while true; do
                     ;;
             esac
             ;;
-        a)
-            echo "Installing alias (shell dotfiles) ..."
-            git clone https://github.com/refap3/alias ~/alias
-            ~/alias/deploy.sh
-            echo "Done. Run: source ~/.zshrc"
-            ;;
-        0)
+          a)
+              echo "Installing alias (shell dotfiles) ..."
+              git clone https://github.com/refap3/alias ~/alias
+              ~/alias/deploy.sh
+              echo "Done. Run: source ~/.zshrc"
+              ;;
+          b)
+              disk_speed_test
+              ;;
+          0)
             echo "Exiting..."
             break
             ;;
