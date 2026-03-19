@@ -1,0 +1,247 @@
+.TH DEB 1 "2026-03-19" "deb repo" "User Commands"
+.SH NAME
+deb \- Debian / Raspberry Pi setup scripts and patches
+.SH SYNOPSIS
+.B ~/deb/menu
+.SH DESCRIPTION
+The
+.B deb
+repo contains shell scripts for setting up and hardening Debian-based systems,
+primarily Raspberry Pi OS.
+It covers SSH configuration, sudo setup, firewall rules, Docker installation,
+and various utilities.
+.PP
+Start with the interactive menu:
+.PP
+.RS
+~/deb/menu
+.RE
+.SH INSTALL
+.B One-line install:
+.PP
+.RS
+curl -fsSL https://raw.githubusercontent.com/refap3/deb/master/install.sh | bash
+.RE
+.PP
+Clones a shallow copy into
+.IR ~/deb .
+.PP
+.B Update (requires alias repo):
+.PP
+.RS
+dbu
+.RE
+.PP
+Or manually:
+.PP
+.RS
+git -C ~/deb fetch --depth=1 origin master && git -C ~/deb reset --hard origin/master
+.RE
+.SH MENU
+Running
+.B ~/deb/menu
+presents an interactive numbered menu with these options:
+.TP
+.B 1. Install SSH keys
+Runs
+.I patch_sshkeys
+\(em copies
+.I authorized_keys
+to
+.I ~/.ssh/
+with correct permissions.
+.TP
+.B 2. Enable login with KEY only
+Runs
+.I patch_ssh_only
+\(em disables password authentication in sshd, key-only login.
+.TP
+.B 3. Enable login with password
+Runs
+.I patch_ssh_password
+\(em re-enables password authentication in sshd.
+.TP
+.B 4. Remove SSH password warning
+Runs
+.I patch_remove_password_warning
+\(em removes
+.I /etc/profile.d/sshpwd.sh
+warning script.
+.TP
+.B 5. Enable sudo (Debian)
+Runs
+.I patch_sudo
+\(em installs sudo and adds the
+.I debian8
+user to the sudo group.
+.TP
+.B 6. Enable sudo (Ubuntu)
+Runs
+.I ub_patch_sudo
+\(em appends a NOPASSWD rule to
+.IR /etc/sudoers .
+.TP
+.B 7. Github credential helper
+Configures git to cache credentials with
+.IR "git config --global credential.helper store" .
+On next push, credentials are prompted and stored.
+.TP
+.B 8. Install Docker stack
+Runs
+.IR install_docker ,
+then starts
+.B ntopng + InfluxDB + Grafana
+via docker-compose.
+.TP
+.B 9. Manage Daily Reboot
+Sub-menu: set up or remove a cron job that reboots the Pi daily at 2:00 AM.
+Creates/removes
+.IR /home/pi/reboot_daily.sh .
+.TP
+.B a. Install alias
+Clones the alias shell dotfiles repo into
+.I ~/alias
+and runs
+.IR deploy.sh .
+.TP
+.B b. Disk Speed Test
+Runs
+.I disk_speed_test
+\(em 128 MB read/write benchmark with a 1\(en10 rating.
+.SH SCRIPTS
+.SS SSH Patches
+.TP
+.I patch_sshkeys
+Installs
+.I authorized_keys
+to
+.I ~/.ssh/
+with chmod 600.
+.TP
+.I patch_ssh_only
+Sets
+.I PasswordAuthentication no
+in sshd_config and restarts sshd.
+Rollback:
+.IR patch_ssh_password .
+.TP
+.I patch_ssh_password
+Re-enables
+.I PasswordAuthentication yes
+in sshd_config.
+.TP
+.I patch_remove_password_warning
+Removes the shell-login SSH password warning.
+.SS Sudo Patches
+.TP
+.I patch_sudo
+Installs sudo and adds
+.I debian8
+to the sudo group.
+.TP
+.I ub_patch_sudo
+Ubuntu variant: appends NOPASSWD rule to
+.IR /etc/sudoers .
+.SS Firewall
+.TP
+.I patch_iptables
+Installs iptables rules and hooks them into
+.I /etc/network/if-pre-up.d/
+so they are applied at every boot.
+.TP
+.I iptables.up.rules
+Rule definitions: drops TCP/UDP port 111 (rpcbind), allows all other traffic.
+.PP
+Verify with:
+.RS
+sudo nmap <host-ip>
+.RE
+Expected result: port 22 open, port 111 filtered.
+.SS Installation Scripts
+.TP
+.I install_docker
+Installs Docker CE, docker-compose plugin, and adds the
+.I pi
+user to the
+.I docker
+group.
+Also runs Portainer.
+After install, log out and back in before running
+.I docker-compose up -d
+from
+.IR ~/deb .
+.TP
+.I install_dotnet
+Installs .NET Core runtime to
+.IR /opt/dotnet .
+.TP
+.I nodered-install-debian
+Installs Node-RED via the official installer script and enables the systemd service.
+.SS Utilities
+.TP
+.I disk_speed_test
+128 MB read/write benchmark on the current directory.
+Rates the result 1\(en10.
+Also available as
+.B dst
+alias (requires alias repo).
+.TP
+.I map_smb_share
+Mounts a CIFS/SMB share and adds it to
+.IR /etc/fstab .
+Edit the variables at the top of the file before running.
+.TP
+.I snippets_aigen_hass_routing
+Home Assistant gateway switching menu (for JuiceSSH / Termius).
+.SH DOCKER MONITORING STACK
+The included
+.I docker-compose.yaml
+runs three services:
+.TP
+.B ntopng
+Network traffic monitor. Runs in host network mode. Requires
+.IR ntopng.license .
+.TP
+.B InfluxDB 2.7
+Time-series database on port
+.BR 8086 .
+First run: open
+.I http://<host>:8086
+to complete initial setup.
+.TP
+.B Grafana 11
+Dashboard on port
+.B 4000
+\(em
+.IR http://<host>:4000 .
+.PP
+Start:
+.RS
+sudo ~/deb/install_docker
+.br
+# log out and back in
+.br
+cd ~/deb && docker-compose up -d
+.RE
+.SH PREREQUISITES
+.IP \(bu 4
+Debian 10+ or Raspberry Pi OS (64-bit recommended for Docker stack)
+.IP \(bu 4
+.IR git ,
+.IR sudo ,
+.IR curl
+installed
+.IP \(bu 4
+Internet access for install scripts
+.SH SEE ALSO
+.BR ssh (1),
+.BR sshd_config (5),
+.BR iptables (8),
+.BR docker (1),
+.BR crontab (1)
+.SH VIEW THIS PAGE
+.RS
+man deb
+.RE
+.SH AUTHOR
+rainers

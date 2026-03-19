@@ -148,6 +148,17 @@ All other ports should be closed or filtered.
 
 ---
 
+## Man page
+
+```bash
+man deb
+```
+
+Requires the [alias](https://github.com/refap3/alias) repo to be installed (it sets `MANPATH`).
+Or directly: `man ~/deb/man/man1/deb.1`
+
+---
+
 ## Shell dotfiles
 
 Shell dotfiles (zsh/bash aliases, deploy script, etc.) have moved to a dedicated repo:
