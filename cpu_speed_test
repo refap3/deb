@@ -25,15 +25,20 @@ _parse_time_ms() {
 }
 
 # Pick computation engine: python3 preferred (always on Pi OS), bc fallback
+# python3: 3M pure-Python float iterations — thresholds calibrated to Pi hardware
+# bc:      pi to 5000 digits via bc -l     — original thresholds (seconds range)
 if command -v python3 >/dev/null 2>&1; then
-    _bench_cmd='python3 -c "import decimal; decimal.getcontext().prec=5000; x=decimal.Decimal(2).sqrt()"'
-    _bench_desc="sqrt(2) to 5000 digits (python3)"
+    _bench_cmd='python3 -c "print(sum(i**-0.5 for i in range(1,3000001)))"'
+    _bench_desc="3M float iterations (python3)"
+    _bench_mode="py"
 elif command -v bc >/dev/null 2>&1; then
     _bench_cmd='echo "scale=5000; 4*a(1)" | bc -l'
     _bench_desc="pi to 5000 digits (bc)"
+    _bench_mode="bc"
 else
     _bench_cmd=""
     _bench_desc=""
+    _bench_mode=""
 fi
 
 # Single-core
@@ -64,24 +69,41 @@ else
 fi
 
 # Rating based on single-core time (lower is better)
-awk -v sc="$sc_ms" -v mc="$mc_ms" -v ncpu="$ncpu" 'BEGIN{
+# Thresholds differ by engine: python3 is much faster than bc
+awk -v sc="$sc_ms" -v mc="$mc_ms" -v ncpu="$ncpu" -v mode="$_bench_mode" 'BEGIN{
     if (sc <= 0) { print "\nCould not measure."; exit }
 
-    if(sc<=500)        rating=10
-    else if(sc<=800)   rating=9
-    else if(sc<=1200)  rating=8
-    else if(sc<=1800)  rating=7
-    else if(sc<=2500)  rating=6
-    else if(sc<=3500)  rating=5
-    else if(sc<=5000)  rating=4
-    else if(sc<=8000)  rating=3
-    else if(sc<=12000) rating=2
-    else               rating=1
+    if (mode == "py") {
+        # Calibrated for 3M pure-Python float iterations
+        # Mac M-series ~175ms, Pi 4 ~350ms, Pi 3 ~1100ms, Pi Zero class ~3000ms+
+        if(sc<=200)        rating=10
+        else if(sc<=400)   rating=9
+        else if(sc<=650)   rating=8
+        else if(sc<=950)   rating=7
+        else if(sc<=1300)  rating=6
+        else if(sc<=1800)  rating=5
+        else if(sc<=2500)  rating=4
+        else if(sc<=3500)  rating=3
+        else if(sc<=5500)  rating=2
+        else               rating=1
+    } else {
+        # bc: pi to 5000 digits (seconds range)
+        if(sc<=500)        rating=10
+        else if(sc<=800)   rating=9
+        else if(sc<=1200)  rating=8
+        else if(sc<=1800)  rating=7
+        else if(sc<=2500)  rating=6
+        else if(sc<=3500)  rating=5
+        else if(sc<=5000)  rating=4
+        else if(sc<=8000)  rating=3
+        else if(sc<=12000) rating=2
+        else               rating=1
+    }
 
-    if(rating>=9)      desc="Excellent  (modern high-performance CPU)"
-    else if(rating>=7) desc="Good       (recent mid-range CPU)"
-    else if(rating>=5) desc="Moderate   (older or low-power CPU)"
-    else if(rating>=3) desc="Slow       (ARM / embedded / old CPU)"
+    if(rating>=9)      desc="Excellent  (Mac/PC or Raspberry Pi 4+)"
+    else if(rating>=7) desc="Good       (Pi 3B+ class)"
+    else if(rating>=5) desc="Moderate   (Pi 3B / older ARM)"
+    else if(rating>=3) desc="Slow       (Pi Zero class)"
     else               desc="Very slow  (minimal compute)"
 
     if(mc > 0 && sc > 0)
