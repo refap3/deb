@@ -1,21 +1,41 @@
-#!/bin/sh
-set -e
-### docker version to install ntopng influxdb and grafana ---
-## run grafana and influxdb either on host or private network, see below:
+  #!/bin/sh
+  set -e
 
-# docker 
-sudo apt-get update -y && sudo apt-get upgrade -y
+  ### Docker clean install for Raspberry Pi (Debian/Raspberry Pi OS)
+  ### Fixes: locale warnings, Debian/Docker repo package conflicts
 
-curl -fsSL https://get.docker.com -o get-docker.sh 
-sudo sh get-docker.sh 
-sudo apt install docker-compose -y
-sudo usermod -aG docker pi
-# apply new group membership
-echo "raspberry" | su -l pi
-echo "logout / login -- above did not werk!"
+  # Fix locale before any apt operations
+  sudo locale-gen en_US.UTF-8 en_GB.UTF-8
+  sudo update-locale LANG=en_GB.UTF-8 LC_ALL=en_GB.UTF-8
 
-sudo docker volume create portainer_data 
-sudo docker run -d -p 8000:8000 -p 9443:9443 --name portainer --restart=always -v /var/run/docker.sock:/var/run/docker.sock -v portainer_data:/data portainer/portainer-ce:latest
+  # Remove any conflicting Debian-repo Docker packages
+  sudo apt-get remove --purge -y \
+    docker docker-engine docker.io containerd runc \
+    docker-cli docker-buildx docker-compose 2>/dev/null || true
 
-# logout HERE -- only iff above does not werk!
+  # Update system
+  sudo apt-get update -y && sudo apt-get upgrade -y
 
+  # Install Docker via official script (installs docker-ce, docker-ce-cli,
+  # containerd.io, docker-buildx-plugin, docker-compose-plugin)
+  curl -fsSL https://get.docker.com -o get-docker.sh
+  sudo sh get-docker.sh
+  rm get-docker.sh
+
+  # Add current user to docker group (works for any username, not just 'pi')
+  sudo usermod -aG docker "$USER"
+
+  # Create portainer volume and start portainer
+  sudo docker volume create portainer_data
+  sudo docker run -d \
+    -p 8000:8000 \
+    -p 9443:9443 \
+    --name portainer \
+    --restart=always \
+    -v /var/run/docker.sock:/var/run/docker.sock \
+    -v portainer_data:/data \
+    portainer/portainer-ce:latest
+
+  echo ""
+  echo "Done! Log out and back in for docker group membership to take effect."
+  echo "Portainer: https://$(hostname -I | awk '{print $1}'):9443"
