@@ -24,30 +24,42 @@ _parse_time_ms() {
     }'
 }
 
-# Single-core: time bc computing pi to 5000 decimal places
-echo -n "Single-core: "
-if command -v bc >/dev/null 2>&1; then
-    sc_ms=$( { time echo "scale=5000; 4*a(1)" | bc -l >/dev/null; } 2>&1 | _parse_time_ms)
-    echo "${sc_ms} ms  (pi to 5000 digits)"
+# Pick computation engine: python3 preferred (always on Pi OS), bc fallback
+if command -v python3 >/dev/null 2>&1; then
+    _bench_cmd='python3 -c "import decimal; decimal.getcontext().prec=5000; x=decimal.Decimal(2).sqrt()"'
+    _bench_desc="sqrt(2) to 5000 digits (python3)"
+elif command -v bc >/dev/null 2>&1; then
+    _bench_cmd='echo "scale=5000; 4*a(1)" | bc -l'
+    _bench_desc="pi to 5000 digits (bc)"
 else
-    echo "bc not available"
+    _bench_cmd=""
+    _bench_desc=""
+fi
+
+# Single-core
+echo -n "Single-core: "
+if [[ -n "$_bench_cmd" ]]; then
+    sc_ms=$( { time eval "$_bench_cmd" >/dev/null; } 2>&1 | _parse_time_ms)
+    echo "${sc_ms} ms  (${_bench_desc})"
+else
+    echo "python3 and bc not available"
     sc_ms=0
 fi
 
-# Multi-core: run ncpu bc jobs in parallel
+# Multi-core: run ncpu jobs in parallel
 echo -n "Multi-core:  "
-if command -v bc >/dev/null 2>&1; then
+if [[ -n "$_bench_cmd" ]]; then
     mc_ms=$( {
         time (
             for i in $(seq 1 "$ncpu"); do
-                echo "scale=5000; 4*a(1)" | bc -l >/dev/null &
+                eval "$_bench_cmd" >/dev/null &
             done
             wait
         )
     } 2>&1 | _parse_time_ms)
     echo "${mc_ms} ms  (${ncpu} parallel jobs)"
 else
-    echo "bc not available"
+    echo "python3 and bc not available"
     mc_ms=0
 fi
 
