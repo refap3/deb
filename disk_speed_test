@@ -16,8 +16,8 @@ _parse_dd_speed() {
     local out="$1"
     if [[ "$os_type" == "Darwin" ]]; then
         echo "$out" | awk '/bytes\/sec/{
-            match($0, /\(([0-9]+) bytes\/sec\)/, a)
-            printf "%.1f", a[1]/1048576
+            match($0, /\([0-9]+/)
+            printf "%.1f", substr($0, RSTART+1, RLENGTH-1)/1048576
         }'
     else
         echo "$out" | awk '/copied/{

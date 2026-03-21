@@ -1,0 +1,82 @@
+#!/usr/bin/env bash
+set -e
+
+os_type="$(uname)"
+
+# Detect number of logical CPUs
+if [[ "$os_type" == "Darwin" ]]; then
+    ncpu=$(sysctl -n hw.logicalcpu)
+else
+    ncpu=$(nproc 2>/dev/null || grep -c ^processor /proc/cpuinfo)
+fi
+
+echo "CPU speed test"
+echo "Logical CPUs: $ncpu"
+echo ""
+
+# Parse "real Xm Y.ZZZs" line from `time` output into milliseconds
+_parse_time_ms() {
+    awk '/real/{
+        t=$2
+        sub(/s$/,"",t)
+        split(t,a,"m")
+        printf "%d", int(a[1]*60000 + a[2]*1000 + 0.5)
+    }'
+}
+
+# Single-core: time bc computing pi to 5000 decimal places
+echo -n "Single-core: "
+if command -v bc >/dev/null 2>&1; then
+    sc_ms=$( { time echo "scale=5000; 4*a(1)" | bc -l >/dev/null; } 2>&1 | _parse_time_ms)
+    echo "${sc_ms} ms  (pi to 5000 digits)"
+else
+    echo "bc not available"
+    sc_ms=0
+fi
+
+# Multi-core: run ncpu bc jobs in parallel
+echo -n "Multi-core:  "
+if command -v bc >/dev/null 2>&1; then
+    mc_ms=$( {
+        time (
+            for i in $(seq 1 "$ncpu"); do
+                echo "scale=5000; 4*a(1)" | bc -l >/dev/null &
+            done
+            wait
+        )
+    } 2>&1 | _parse_time_ms)
+    echo "${mc_ms} ms  (${ncpu} parallel jobs)"
+else
+    echo "bc not available"
+    mc_ms=0
+fi
+
+# Rating based on single-core time (lower is better)
+awk -v sc="$sc_ms" -v mc="$mc_ms" -v ncpu="$ncpu" 'BEGIN{
+    if (sc <= 0) { print "\nCould not measure."; exit }
+
+    if(sc<=500)        rating=10
+    else if(sc<=800)   rating=9
+    else if(sc<=1200)  rating=8
+    else if(sc<=1800)  rating=7
+    else if(sc<=2500)  rating=6
+    else if(sc<=3500)  rating=5
+    else if(sc<=5000)  rating=4
+    else if(sc<=8000)  rating=3
+    else if(sc<=12000) rating=2
+    else               rating=1
+
+    if(rating>=9)      desc="Excellent  (modern high-performance CPU)"
+    else if(rating>=7) desc="Good       (recent mid-range CPU)"
+    else if(rating>=5) desc="Moderate   (older or low-power CPU)"
+    else if(rating>=3) desc="Slow       (ARM / embedded / old CPU)"
+    else               desc="Very slow  (minimal compute)"
+
+    if(mc > 0 && sc > 0)
+        speedup=(sc*ncpu)/mc
+    else
+        speedup=0
+
+    printf "\nSingle-core: %d ms\nMulti-core:  %d ms  (%.1fx speedup across %d cores)\n", sc, mc, speedup, ncpu
+    printf "Rating:      %d/10 — %s\n", rating, desc
+}'

@@ -47,21 +47,27 @@ remove_daily_reboot() {
 
 
 while true; do
-    echo "Menu:"
-      echo "1. Install SSH keys"
-      echo "2. Enable login with KEY only"
-      echo "3. Enable login with password"
-      echo "4. Remove SSH password warning"
-      echo "5. Enable sudo (Debian)"
-      echo "6. Enable sudo (Ubuntu)"
-      echo "7. Github credential helper"
-      echo "8. Install Docker stack (ntopng + InfluxDB + Grafana)"
-      echo "9. Manage Daily Reboot (setup or remove)"
-      echo "a. Install alias (shell dotfiles)"
-      echo "b. Disk Speed Test"
-      echo "0. Exit"
-
-    read -p "Enter your choice: " choice
+    if [[ -n "$1" ]]; then
+        choice="$1"
+        set --
+        one_shot=true
+    else
+        echo "Menu:"
+        echo "1. Install SSH keys"
+        echo "2. Enable login with KEY only"
+        echo "3. Enable login with password"
+        echo "4. Remove SSH password warning"
+        echo "5. Enable sudo (Debian)"
+        echo "6. Enable sudo (Ubuntu)"
+        echo "7. Github credential helper"
+        echo "8. Install Docker stack (ntopng + InfluxDB + Grafana)"
+        echo "9. Manage Daily Reboot (setup or remove)"
+        echo "a. Install alias (shell dotfiles)"
+        echo "b. Disk Speed Test"
+        echo "c. CPU Speed Test"
+        echo "0. Exit"
+        read -p "Enter your choice: " choice
+    fi
 
     case $choice in
         1)
@@ -125,6 +131,9 @@ while true; do
           b)
               "${SCRIPT_DIR}/disk_speed_test"
               ;;
+          c)
+              "${SCRIPT_DIR}/cpu_speed_test"
+              ;;
           0|'')
             echo "Exiting..."
             break
@@ -134,5 +143,6 @@ while true; do
             ;;
     esac
 
+    [[ "${one_shot:-false}" == true ]] && break
     echo
 done
