@@ -119,7 +119,7 @@ Runs
 .B c. CPU Speed Test
 Runs
 .I cpu_speed_test
-\(em single-core and multi-core benchmark (sqrt(2) to 5000 digits via python3, or pi via bc) with a 1\(en10 rating.
+\(em single-core and multi-core benchmark (3M pure-Python float iterations; falls back to bc if python3 absent) with a 1\(en10 rating calibrated to Raspberry Pi hardware.
 .SH SCRIPTS
 .SS SSH Patches
 .TP
@@ -202,10 +202,13 @@ alias (requires alias repo).
 Single-core and multi-core CPU benchmark.
 Uses
 .BR python3 (1)
-(preferred; always available on Raspberry Pi OS) to compute sqrt(2) to 5000 decimal places,
-falling back to
+(preferred; always available on Raspberry Pi OS) to run 3 million pure-Python
+floating-point iterations \(em a workload that differentiates Pi hardware:
+~175 ms on a modern Mac, ~350 ms on a Pi 4, ~1100 ms on a Pi 3, ~3000 ms on a Pi Zero class device.
+Falls back to
 .BR bc (1)
 (pi to 5000 digits) if python3 is absent.
+Rating thresholds are calibrated separately for each engine.
 Shows parallel speedup across all logical CPUs and rates single-core performance 1\(en10.
 .TP
 .I map_smb_share
