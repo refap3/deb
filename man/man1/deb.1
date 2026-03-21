@@ -3,6 +3,7 @@
 deb \- Debian / Raspberry Pi setup scripts and patches
 .SH SYNOPSIS
 .B ~/deb/menu
+.RI [ choice ]
 .SH DESCRIPTION
 The
 .B deb
@@ -15,6 +16,12 @@ Start with the interactive menu:
 .PP
 .RS
 ~/deb/menu
+.RE
+.PP
+An optional argument runs that choice directly and exits without showing the menu:
+.PP
+.RS
+~/deb/menu b
 .RE
 .SH INSTALL
 .B One-line install:
@@ -108,6 +115,11 @@ and runs
 Runs
 .I disk_speed_test
 \(em 128 MB read/write benchmark with a 1\(en10 rating.
+.TP
+.B c. CPU Speed Test
+Runs
+.I cpu_speed_test
+\(em single-core and multi-core benchmark (pi to 5000 digits via bc) with a 1\(en10 rating.
 .SH SCRIPTS
 .SS SSH Patches
 .TP
@@ -185,6 +197,12 @@ Rates the result 1\(en10.
 Also available as
 .B dst
 alias (requires alias repo).
+.TP
+.I cpu_speed_test
+Single-core and multi-core CPU benchmark: times
+.BR bc (1)
+computing pi to 5000 decimal places.
+Shows parallel speedup across all logical CPUs and rates single-core performance 1\(en10.
 .TP
 .I map_smb_share
 Mounts a CIFS/SMB share and adds it to
