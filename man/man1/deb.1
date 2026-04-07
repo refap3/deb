@@ -1,4 +1,4 @@
-.TH DEB 1 "2026-03-21" "deb repo" "User Commands"
+.TH DEB 1 "2026-04-07" "deb repo" "User Commands"
 .SH NAME
 deb \- Debian / Raspberry Pi setup scripts and patches
 .SH SYNOPSIS
@@ -24,14 +24,28 @@ An optional argument runs that choice directly and exits without showing the men
 ~/deb/menu b
 .RE
 .SH INSTALL
-.B One-line install:
+.B Minimal install
+(deb repo only):
 .PP
 .RS
-curl -fsSL https://raw.githubusercontent.com/refap3/deb/master/install.sh | bash
+bash <(curl -fsSL https://raw.githubusercontent.com/refap3/deb/master/install.sh)
 .RE
 .PP
 Clones a shallow copy into
 .IR ~/deb .
+Then run
+.BR ~/deb/menu .
+.PP
+.B Full bootstrap
+(git + deb + alias dotfiles + Docker + Portainer):
+.PP
+.RS
+bash <(curl -fsSL https://raw.githubusercontent.com/refap3/deb/master/install.sh) --full
+.RE
+.PP
+After
+.BR --full ,
+log out and back in for the docker group to take effect.
 .PP
 .B Update (requires alias repo):
 .PP

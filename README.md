@@ -9,11 +9,17 @@ Various patches and setup scripts for Debian / Raspberry Pi.
 
 ## Install (one line)
 
+**Minimal** — clones deb repo only, then run `~/deb/menu`:
 ```bash
-curl -fsSL https://raw.githubusercontent.com/refap3/deb/master/install.sh | bash
+bash <(curl -fsSL https://raw.githubusercontent.com/refap3/deb/master/install.sh)
 ```
 
-Clones a shallow copy (no history) into `~/deb`. Then run `~/deb/menu`.
+**Full bootstrap** — installs git, deb repo, alias dotfiles, and Docker + Portainer:
+```bash
+bash <(curl -fsSL https://raw.githubusercontent.com/refap3/deb/master/install.sh) --full
+```
+
+> After `--full`, log out and back in for the docker group to take effect.
 
 ## Update
 
@@ -40,9 +46,9 @@ curl -fsSL https://raw.githubusercontent.com/refap3/deb/master/install.sh | bash
 ## Quick start (manual)
 
 ```bash
-sudo apt update && sudo apt install git -y
-git clone https://github.com/refap3/deb
-./deb/menu
+sudo apt-get install -y git
+git clone --depth 1 https://github.com/refap3/deb ~/deb
+~/deb/menu
 ```
 
 ## Scripts
