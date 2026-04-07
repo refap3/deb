@@ -56,7 +56,7 @@ fi
 # ── 4. docker ─────────────────────────────────────────────────────────────────
 if [ "$FULL" -eq 1 ]; then
   echo "Installing Docker via $DEST/install_docker ..."
-  sudo sh "$DEST/install_docker"
+  sh "$DEST/install_docker"
 fi
 
 echo ""
