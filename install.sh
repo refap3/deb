@@ -55,24 +55,8 @@ fi
 
 # ── 4. docker ─────────────────────────────────────────────────────────────────
 if [ "$FULL" -eq 1 ]; then
-  echo "Installing Docker..."
-  sudo apt-get update -y
-  curl -fsSL https://get.docker.com | sudo sh
-  sudo apt-get install -y docker-compose
-  sudo usermod -aG docker "$USER"
-
-  echo "Starting Portainer..."
-  sudo docker volume create portainer_data
-  sudo docker run -d \
-    -p 8000:8000 -p 9443:9443 \
-    --name portainer \
-    --restart=always \
-    -v /var/run/docker.sock:/var/run/docker.sock \
-    -v portainer_data:/data \
-    portainer/portainer-ce:latest
-
-  echo ""
-  echo "Docker installed. Log out and back in for group membership to take effect."
+  echo "Installing Docker via $DEST/install_docker ..."
+  sudo sh "$DEST/install_docker"
 fi
 
 echo ""
