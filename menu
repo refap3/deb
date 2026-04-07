@@ -65,6 +65,7 @@ while true; do
         echo "a. Install alias (shell dotfiles)"
         echo "b. Disk Speed Test"
         echo "c. CPU Speed Test"
+        echo "d. Uninstall Docker (full cleanup)"
         echo "0. Exit"
         read -p "Enter your choice: " choice
     fi
@@ -101,7 +102,7 @@ while true; do
             ;;
         8)
             echo "Installing Docker ..."
-            sudo "${SCRIPT_DIR}/install_docker"
+            "${SCRIPT_DIR}/install_docker"
             echo "Docker installed. Log out and back in for group to apply, then:"
             echo "  cd ${SCRIPT_DIR} && docker-compose up -d"
             ;;
@@ -133,6 +134,10 @@ while true; do
               ;;
           c)
               "${SCRIPT_DIR}/cpu_speed_test"
+              ;;
+          d)
+              echo "Uninstalling Docker..."
+              "${SCRIPT_DIR}/uninstall_docker"
               ;;
           0|'')
             echo "Exiting..."

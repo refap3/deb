@@ -134,6 +134,12 @@ Runs
 Runs
 .I cpu_speed_test
 \(em single-core and multi-core benchmark (3M pure-Python float iterations; falls back to bc if python3 absent) with a 1\(en10 rating calibrated to Raspberry Pi hardware.
+.TP
+.B d. Uninstall Docker
+Runs
+.I uninstall_docker
+\(em stops and removes all containers, volumes, images, Docker packages, and the docker group. Use before re-running
+.IR install_docker .
 .SH SCRIPTS
 .SS SSH Patches
 .TP
@@ -186,9 +192,7 @@ Expected result: port 22 open, port 111 filtered.
 .SS Installation Scripts
 .TP
 .I install_docker
-Installs Docker CE, docker-compose plugin, and adds the
-.I pi
-user to the
+Installs Docker CE, docker-compose plugin, and adds the current user to the
 .I docker
 group.
 Also runs Portainer.
@@ -196,6 +200,13 @@ After install, log out and back in before running
 .I docker-compose up -d
 from
 .IR ~/deb .
+.TP
+.I uninstall_docker
+Fully removes Docker: stops and deletes all containers, volumes, and images;
+purges all Docker packages; removes
+.IR /var/lib/docker ;
+deletes the docker group.
+Run this before re-installing Docker.
 .TP
 .I install_dotnet
 Installs .NET Core runtime to

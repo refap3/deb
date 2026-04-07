@@ -90,7 +90,8 @@ git clone --depth 1 https://github.com/refap3/deb ~/deb
 
 | Script | Description |
 |--------|-------------|
-| `install_docker` | Installs Docker, docker-compose, adds `pi` to docker group, runs Portainer |
+| `install_docker` | Installs Docker, docker-compose, adds current user to docker group, runs Portainer |
+| `uninstall_docker` | Fully removes Docker, all containers, volumes, images, and the docker group |
 | `install_dotnet` | Installs .NET Core runtime to `/opt/dotnet` |
 | `nodered-install-debian` | Installs Node-RED via official installer, enables systemd service |
 

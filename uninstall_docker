@@ -1,0 +1,30 @@
+#!/bin/sh
+set -e
+
+### Fully remove Docker and all containers/volumes from a Raspberry Pi / Debian system
+
+echo "Stopping and removing all containers..."
+sudo docker rm -f $(sudo docker ps -aq) 2>/dev/null || true
+
+echo "Removing all volumes..."
+sudo docker volume prune -f || true
+
+echo "Removing all images..."
+sudo docker image prune -af || true
+
+echo "Uninstalling Docker packages..."
+sudo apt-get purge -y \
+  docker-ce docker-ce-cli containerd.io \
+  docker-buildx-plugin docker-compose-plugin \
+  docker docker-engine docker.io 2>/dev/null || true
+
+sudo apt-get autoremove -y
+
+echo "Removing Docker data directories..."
+sudo rm -rf /var/lib/docker /var/lib/containerd /etc/docker
+
+echo "Removing docker group..."
+sudo groupdel docker 2>/dev/null || true
+
+echo ""
+echo "Docker fully removed. You can now re-run install_docker."
