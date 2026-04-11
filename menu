@@ -60,7 +60,7 @@ while true; do
         echo "5. Enable sudo (Debian)"
         echo "6. Enable sudo (Ubuntu)"
         echo "7. Github credential helper"
-        echo "8. Install Docker stack (ntopng + InfluxDB + Grafana)"
+        echo "8. Install Docker stack (docker / compose / portainer)"
         echo "9. Manage Daily Reboot (setup or remove)"
         echo "a. Install alias (shell dotfiles)"
         echo "b. Disk Speed Test"
