@@ -37,7 +37,7 @@ Then run
 .BR ~/deb/menu .
 .PP
 .B Full bootstrap
-(git + deb + alias dotfiles + Docker + Portainer):
+(git + deb + alias dotfiles + Docker apt source repository + Docker CE + Portainer):
 .PP
 .RS
 bash <(curl -fsSL https://raw.githubusercontent.com/refap3/deb/master/install.sh) --full
@@ -192,7 +192,9 @@ Expected result: port 22 open, port 111 filtered.
 .SS Installation Scripts
 .TP
 .I install_docker
-Installs Docker CE, docker-compose plugin, and adds the current user to the
+Adds the official Docker apt source repository (GPG key +
+.IR /etc/apt/sources.list.d/docker.list ),
+then installs Docker CE, docker-compose plugin, and adds the current user to the
 .I docker
 group.
 Also runs Portainer.

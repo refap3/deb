@@ -4,7 +4,7 @@
 # Basic install (deb repo only):
 #   bash <(curl -fsSL https://raw.githubusercontent.com/refap3/deb/master/install.sh)
 #
-# Full install (git + deb + alias dotfiles + docker):
+# Full install (git + deb + alias dotfiles + docker + Docker apt source repository):
 #   bash <(curl -fsSL https://raw.githubusercontent.com/refap3/deb/master/install.sh) --full
 set -euo pipefail
 
