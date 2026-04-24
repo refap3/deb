@@ -4,7 +4,7 @@
 # Basic install (deb repo only):
 #   bash <(curl -fsSL https://raw.githubusercontent.com/refap3/deb/master/install.sh)
 #
-# Full install (git + deb + alias dotfiles + docker + Docker apt source repository):
+# Full install (git + deb + alias dotfiles + dockersource + docker):
 #   bash <(curl -fsSL https://raw.githubusercontent.com/refap3/deb/master/install.sh) --full
 set -euo pipefail
 
@@ -53,7 +53,17 @@ elif [ ! -d "$HOME/alias" ]; then
   fi
 fi
 
-# ── 4. docker ─────────────────────────────────────────────────────────────────
+# ── 4. dockersource repo ──────────────────────────────────────────────────────
+if [ "$FULL" -eq 1 ]; then
+  if [ -d "$HOME/dockersource/.git" ]; then
+    echo "dockersource already installed at ~/dockersource"
+  else
+    echo "Cloning dockersource repo into ~/dockersource ..."
+    git clone --depth 1 https://github.com/refap3/dockersource ~/dockersource
+  fi
+fi
+
+# ── 5. docker ─────────────────────────────────────────────────────────────────
 if [ "$FULL" -eq 1 ]; then
   echo "Installing Docker via $DEST/install_docker ..."
   sh "$DEST/install_docker"

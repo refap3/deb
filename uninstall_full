@@ -10,7 +10,16 @@ echo "=== Step 1: uninstall Docker ==="
 sh "${SCRIPT_DIR}/uninstall_docker"
 
 echo ""
-echo "=== Step 2: remove alias dotfiles ==="
+echo "=== Step 2: remove dockersource repo ==="
+if [ -d "$HOME/dockersource" ]; then
+  rm -rf "$HOME/dockersource"
+  echo "Removed ~/dockersource"
+else
+  echo "~/dockersource not found, skipping"
+fi
+
+echo ""
+echo "=== Step 3: remove alias dotfiles ==="
 if [ -d "$HOME/alias" ]; then
   rm -rf "$HOME/alias"
   echo "Removed ~/alias"
