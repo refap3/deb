@@ -138,8 +138,20 @@ Runs
 .B d. Uninstall Docker
 Runs
 .I uninstall_docker
-\(em stops and removes all containers, volumes, images, Docker packages, and the docker group. Use before re-running
+\(em stops and removes all containers, volumes, images, Docker packages, the docker group, and the Docker apt source list and GPG key. Use before re-running
 .IR install_docker .
+.TP
+.B e. Uninstall full bootstrap
+Runs
+.I uninstall_full
+\(em reverses a complete
+.B --full
+bootstrap: calls
+.I uninstall_docker
+then removes the alias dotfiles from
+.IR ~/alias .
+Use to get back to a clean state before re-testing
+.BR "install.sh --full" .
 .SH SCRIPTS
 .SS SSH Patches
 .TP
@@ -207,8 +219,22 @@ from
 Fully removes Docker: stops and deletes all containers, volumes, and images;
 purges all Docker packages; removes
 .IR /var/lib/docker ;
-deletes the docker group.
+deletes the docker group; removes the Docker apt source list
+.RI ( /etc/apt/sources.list.d/docker.list )
+and GPG key
+.RI ( /etc/apt/keyrings/docker.asc ).
 Run this before re-installing Docker.
+.TP
+.I uninstall_full
+Reverses a complete
+.B --full
+bootstrap: calls
+.I uninstall_docker
+then removes
+.I ~/alias
+and the deployed dotfiles.
+Use this to reset to a clean state before re-testing
+.BR "install.sh --full" .
 .TP
 .I install_dotnet
 Installs .NET Core runtime to

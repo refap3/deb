@@ -91,7 +91,8 @@ git clone --depth 1 https://github.com/refap3/deb ~/deb
 | Script | Description |
 |--------|-------------|
 | `install_docker` | Adds the official Docker apt source repository, installs Docker CE packages, adds current user to docker group, runs Portainer |
-| `uninstall_docker` | Fully removes Docker, all containers, volumes, images, and the docker group |
+| `uninstall_docker` | Fully removes Docker, all containers, volumes, images, Docker apt source repo, and the docker group |
+| `uninstall_full` | Reverses a full bootstrap (Docker + apt source + alias dotfiles) — use before re-testing `--full` |
 | `install_dotnet` | Installs .NET Core runtime to `/opt/dotnet` |
 | `nodered-install-debian` | Installs Node-RED via official installer, enables systemd service |
 

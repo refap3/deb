@@ -1,0 +1,31 @@
+#!/bin/sh
+set -e
+
+### Reverse a full bootstrap (--full): Docker + apt source repo + alias dotfiles
+### Run this to get back to a clean state before re-testing install.sh --full
+
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+
+echo "=== Step 1: uninstall Docker ==="
+sh "${SCRIPT_DIR}/uninstall_docker"
+
+echo ""
+echo "=== Step 2: remove alias dotfiles ==="
+if [ -d "$HOME/alias" ]; then
+  rm -rf "$HOME/alias"
+  echo "Removed ~/alias"
+else
+  echo "~/alias not found, skipping"
+fi
+
+# Remove deployed shell config files if they came from the alias repo
+for f in .zshrc .bashrc alias.zsh gitalias.zsh raspberryalias.zsh jump.sh; do
+  if [ -f "$HOME/$f" ]; then
+    rm -f "$HOME/$f"
+    echo "Removed ~/$f"
+  fi
+done
+
+echo ""
+echo "Full bootstrap cleanup complete."
+echo "You can now re-run: bash install.sh --full"

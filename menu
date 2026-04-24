@@ -66,6 +66,7 @@ while true; do
         echo "b. Disk Speed Test"
         echo "c. CPU Speed Test"
         echo "d. Uninstall Docker (full cleanup)"
+        echo "e. Uninstall full bootstrap (Docker + alias) — for re-testing --full"
         echo "0. Exit"
         read -p "Enter your choice: " choice
     fi
@@ -138,6 +139,10 @@ while true; do
           d)
               echo "Uninstalling Docker..."
               "${SCRIPT_DIR}/uninstall_docker"
+              ;;
+          e)
+              echo "Uninstalling full bootstrap (Docker + alias)..."
+              "${SCRIPT_DIR}/uninstall_full"
               ;;
           0|'')
             echo "Exiting..."
