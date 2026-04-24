@@ -25,8 +25,9 @@ fi
 
 # ── 2. deb repo ───────────────────────────────────────────────────────────────
 if [ -d "$DEST/.git" ]; then
-  echo "deb already installed at $DEST"
-  echo "To update: git -C \"$DEST\" fetch --depth=1 origin master && git -C \"$DEST\" reset --hard origin/master"
+  echo "Updating deb repo at $DEST ..."
+  git -C "$DEST" fetch --depth=1 origin master
+  git -C "$DEST" reset --hard origin/master
 else
   echo "Cloning deb repo into $DEST ..."
   git clone --depth 1 https://github.com/refap3/deb "$DEST"
