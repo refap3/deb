@@ -117,6 +117,12 @@ while true; do
                     else
                         echo "  Not found at $REBOOT_SCRIPT_PATH"
                     fi
+                    echo "=== Last 5 reboots (from wtmp) ==="
+                    if command -v last >/dev/null 2>&1; then
+                        last reboot -n 5 | grep -v "^$\|^wtmp" || echo "  (no reboot entries found)"
+                    else
+                        echo "  'last' command not available"
+                    fi
                     ;;
                 *)
                     echo "Invalid choice. Returning to main menu."
