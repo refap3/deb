@@ -140,12 +140,15 @@ Also cleans up any old root-crontab entry from prior installs.
 warns if an old broken user-crontab entry is still present,
 prints the last 5 boot timestamps by grepping
 .I /var/log/syslog*
-for kernel boot lines (fast on all hardware), falling back to
-.BR journalctl\ --list-boots ,
+for kernel boot lines; falls back to
+.BR utmpdump (1)
+on
+.I /var/log/wtmp
+(fast even on Pi Zero), then
 .BR last (1),
-or
-.BR who\ -b
-in that order.
+then
+.BR uptime\ -s
+as a last resort.
 Status check reads
 .I /etc/cron.d/reboot_daily
 directly — no sudo required, so it is fast even on Pi Zero.
