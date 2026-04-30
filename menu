@@ -34,9 +34,11 @@ remove_daily_reboot() {
 while true; do
     if [[ -n "$1" ]]; then
         choice="$1"
+        sub_choice="$2"
         set --
         one_shot=true
     else
+        sub_choice=""
         echo "Menu:"
         echo "1. Install SSH keys"
         echo "2. Enable login with KEY only"
@@ -93,11 +95,15 @@ while true; do
             echo "  cd ${SCRIPT_DIR} && docker-compose up -d"
             ;;
         9)
-            echo "Manage Daily Reboot:"
-            echo "1. Set up daily reboot at 2:00 AM"
-            echo "2. Remove daily reboot"
-            echo "3. Check daily reboot status"
-            read -p "Enter your choice: " reboot_choice
+            if [[ -n "$sub_choice" ]]; then
+                reboot_choice="$sub_choice"
+            else
+                echo "Manage Daily Reboot:"
+                echo "1. Set up daily reboot at 2:00 AM"
+                echo "2. Remove daily reboot"
+                echo "3. Check daily reboot status"
+                read -p "Enter your choice: " reboot_choice
+            fi
             case $reboot_choice in
                 1)
                     setup_daily_reboot
