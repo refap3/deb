@@ -2,7 +2,7 @@
 set -e
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REBOOT_SCRIPT_PATH="$HOME/reboot_daily.sh"
-ROOT_CRON_JOB="0 2 * * * /sbin/reboot"
+CRON_D_FILE="/etc/cron.d/reboot_daily"
 
 setup_daily_reboot() {
     echo "Creating reboot script at $REBOOT_SCRIPT_PATH..."
@@ -12,8 +12,12 @@ setup_daily_reboot() {
 EOF
     chmod +x "$REBOOT_SCRIPT_PATH"
 
-    echo "Adding cron job to root's crontab..."
-    (sudo crontab -l 2>/dev/null | grep -v "/sbin/reboot"; echo "$ROOT_CRON_JOB") | sudo crontab -
+    echo "Writing $CRON_D_FILE..."
+    printf '0 2 * * * root /sbin/reboot\n' | sudo tee "$CRON_D_FILE" > /dev/null
+    sudo chmod 644 "$CRON_D_FILE"
+
+    # clean up any old root crontab entry from previous installs
+    (sudo crontab -l 2>/dev/null | grep -v "/sbin/reboot") | sudo crontab - 2>/dev/null || true
 
     echo "Done. Pi will reboot at 2:00 AM daily."
 }
@@ -26,7 +30,14 @@ remove_daily_reboot() {
         echo "Reboot script not found at $REBOOT_SCRIPT_PATH."
     fi
 
-    (sudo crontab -l 2>/dev/null | grep -v "/sbin/reboot") | sudo crontab -
+    if [ -f "$CRON_D_FILE" ]; then
+        sudo rm -f "$CRON_D_FILE"
+        echo "Removed $CRON_D_FILE."
+    fi
+
+    # clean up any old root crontab entry
+    (sudo crontab -l 2>/dev/null | grep -v "/sbin/reboot") | sudo crontab - 2>/dev/null || true
+
     echo "Daily reboot removed."
 }
 
@@ -112,8 +123,12 @@ while true; do
                     remove_daily_reboot
                     ;;
                 3)
-                    echo "=== Root crontab (correct) ==="
-                    sudo crontab -l 2>/dev/null | grep -i reboot || echo "  (no reboot entry in root crontab)"
+                    echo "=== /etc/cron.d/reboot_daily (correct) ==="
+                    if [ -f "$CRON_D_FILE" ]; then
+                        cat "$CRON_D_FILE"
+                    else
+                        echo "  (not found — reboot not scheduled)"
+                    fi
                     echo "=== User crontab (should be empty for reboot) ==="
                     crontab -l 2>/dev/null | grep -i reboot && echo "  WARNING: old broken entry still present — run option 2 then 1 to fix" || echo "  (clean)"
                     echo "=== Reboot script ==="

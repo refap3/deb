@@ -126,17 +126,19 @@ Sub-menu with three options:
 .B 1\ set\ up
 \(em creates
 .I ~/reboot_daily.sh
-and adds
-.I 0 2 * * * /sbin/reboot
-to root's crontab (via
-.IR "sudo crontab" )
-so reboot runs as root without a TTY or password prompt;
+and writes
+.I /etc/cron.d/reboot_daily
+(format:
+.IR "0 2 * * * root /sbin/reboot" )
+so reboot runs as root without a TTY or password prompt.
+Also cleans up any old root-crontab entry from prior installs.
 .B 2\ remove
-\(em deletes the script and removes the root crontab entry;
+\(em deletes the script and removes
+.IR /etc/cron.d/reboot_daily ;
 .B 3\ check\ status
 \(em shows root and user crontab reboot entries, the script contents,
 warns if an old broken user-crontab entry is still present,
-and prints the last 5 boot timestamps by grepping
+prints the last 5 boot timestamps by grepping
 .I /var/log/syslog*
 for kernel boot lines (fast on all hardware), falling back to
 .BR journalctl\ --list-boots ,
@@ -144,6 +146,9 @@ for kernel boot lines (fast on all hardware), falling back to
 or
 .BR who\ -b
 in that order.
+Status check reads
+.I /etc/cron.d/reboot_daily
+directly — no sudo required, so it is fast even on Pi Zero.
 .TP
 .B a. Install alias
 Clones the alias shell dotfiles repo into
