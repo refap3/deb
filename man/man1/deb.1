@@ -136,14 +136,14 @@ so reboot runs as root without a TTY or password prompt;
 .B 3\ check\ status
 \(em shows root and user crontab reboot entries, the script contents,
 warns if an old broken user-crontab entry is still present,
-and prints the last 5 boot entries via
-.BR journalctl (1)
-.RI ( --list-boots ),
-falling back to
-.BR last (1)
+and prints the last 5 boot timestamps by grepping
+.I /var/log/syslog*
+for kernel boot lines (fast on all hardware), falling back to
+.BR journalctl\ --list-boots ,
+.BR last (1),
 or
-.BR who (1)
-if journalctl is unavailable.
+.BR who\ -b
+in that order.
 .TP
 .B a. Install alias
 Clones the alias shell dotfiles repo into

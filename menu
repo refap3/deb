@@ -124,7 +124,9 @@ while true; do
                         echo "  Not found at $REBOOT_SCRIPT_PATH"
                     fi
                     echo "=== Last 5 reboots ==="
-                    if command -v journalctl >/dev/null 2>&1; then
+                    if ls /var/log/syslog* >/dev/null 2>&1; then
+                        grep -h "Linux version" /var/log/syslog* 2>/dev/null | awk '{print $1,$2,$3}' | tail -5 || echo "  (no boot entries in syslog)"
+                    elif command -v journalctl >/dev/null 2>&1; then
                         journalctl --list-boots 2>/dev/null | tail -5 || echo "  (no boot entries found)"
                     elif command -v last >/dev/null 2>&1; then
                         last reboot -n 5 | grep -v "^$\|^wtmp" || echo "  (no reboot entries found)"
