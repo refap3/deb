@@ -96,6 +96,7 @@ while true; do
             echo "Manage Daily Reboot:"
             echo "1. Set up daily reboot at 2:00 AM"
             echo "2. Remove daily reboot"
+            echo "3. Check daily reboot status"
             read -p "Enter your choice: " reboot_choice
             case $reboot_choice in
                 1)
@@ -103,6 +104,19 @@ while true; do
                     ;;
                 2)
                     remove_daily_reboot
+                    ;;
+                3)
+                    echo "=== Root crontab (correct) ==="
+                    sudo crontab -l 2>/dev/null | grep -i reboot || echo "  (no reboot entry in root crontab)"
+                    echo "=== User crontab (should be empty for reboot) ==="
+                    crontab -l 2>/dev/null | grep -i reboot && echo "  WARNING: old broken entry still present — run option 2 then 1 to fix" || echo "  (clean)"
+                    echo "=== Reboot script ==="
+                    if [ -f "$REBOOT_SCRIPT_PATH" ]; then
+                        echo "  Found: $REBOOT_SCRIPT_PATH"
+                        cat "$REBOOT_SCRIPT_PATH"
+                    else
+                        echo "  Not found at $REBOOT_SCRIPT_PATH"
+                    fi
                     ;;
                 *)
                     echo "Invalid choice. Returning to main menu."
