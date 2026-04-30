@@ -1,48 +1,33 @@
 #!/usr/bin/env bash
 set -e
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-REBOOT_SCRIPT_PATH="/home/pi/reboot_daily.sh"
-CRON_JOB="0 2 * * * $REBOOT_SCRIPT_PATH"
+REBOOT_SCRIPT_PATH="$HOME/reboot_daily.sh"
+ROOT_CRON_JOB="0 2 * * * /sbin/reboot"
 
-# Function to set up the daily reboot
 setup_daily_reboot() {
-    echo "Setting up the daily reboot process..."
-
-    # Create the reboot script
-    echo "Creating the reboot script at $REBOOT_SCRIPT_PATH..."
-    cat <<EOF > $REBOOT_SCRIPT_PATH
-#!/bin/bash
-# Shell script to reboot the Raspberry Pi
-
-sudo /sbin/reboot
+    echo "Creating reboot script at $REBOOT_SCRIPT_PATH..."
+    cat <<'EOF' > "$REBOOT_SCRIPT_PATH"
+#!/bin/sh
+/sbin/reboot
 EOF
+    chmod +x "$REBOOT_SCRIPT_PATH"
 
-    # Make the script executable
-    chmod +x $REBOOT_SCRIPT_PATH
+    echo "Adding cron job to root's crontab..."
+    (sudo crontab -l 2>/dev/null | grep -v "/sbin/reboot"; echo "$ROOT_CRON_JOB") | sudo crontab -
 
-    # Add the cron job
-    echo "Adding the cron job to schedule the reboot..."
-    (crontab -l 2>/dev/null | grep -v "$REBOOT_SCRIPT_PATH"; echo "$CRON_JOB") | crontab -
-
-    echo "Daily reboot process set up successfully. The Raspberry Pi will reboot at 2:00 AM daily."
+    echo "Done. Pi will reboot at 2:00 AM daily."
 }
 
-# Function to remove the daily reboot
 remove_daily_reboot() {
-    echo "Removing the daily reboot process..."
-
-    # Remove the script
     if [ -f "$REBOOT_SCRIPT_PATH" ]; then
         rm -f "$REBOOT_SCRIPT_PATH"
-        echo "Deleted the reboot script at $REBOOT_SCRIPT_PATH."
+        echo "Removed $REBOOT_SCRIPT_PATH."
     else
         echo "Reboot script not found at $REBOOT_SCRIPT_PATH."
     fi
 
-    # Remove the cron job
-    (crontab -l 2>/dev/null | grep -v "$REBOOT_SCRIPT_PATH") | crontab -
-
-    echo "Daily reboot process removed successfully."
+    (sudo crontab -l 2>/dev/null | grep -v "/sbin/reboot") | sudo crontab -
+    echo "Daily reboot removed."
 }
 
 

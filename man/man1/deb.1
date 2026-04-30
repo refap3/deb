@@ -117,7 +117,10 @@ via docker-compose.
 .B 9. Manage Daily Reboot
 Sub-menu: set up or remove a cron job that reboots the Pi daily at 2:00 AM.
 Creates/removes
-.IR /home/pi/reboot_daily.sh .
+.I ~/reboot_daily.sh
+and adds/removes the job from root's crontab (via
+.IR "sudo crontab" )
+so that reboot runs as root without requiring a TTY or password prompt.
 .TP
 .B a. Install alias
 Clones the alias shell dotfiles repo into
