@@ -152,6 +152,9 @@ as a last resort.
 Status check reads
 .I /etc/cron.d/reboot_daily
 directly — no sudo required, so it is fast even on Pi Zero.
+Ends with a green checkmark if all prerequisites are met
+(cron file present, no stale user-crontab entry, reboot script found),
+or a red cross listing what is missing.
 .TP
 .B a. Install alias
 Clones the alias shell dotfiles repo into

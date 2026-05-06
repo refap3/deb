@@ -123,21 +123,35 @@ while true; do
                     remove_daily_reboot
                     ;;
                 3)
-                    echo "=== /etc/cron.d/reboot_daily (correct) ==="
+                    GREEN='\033[32m'; RED='\033[31m'; RESET='\033[0m'
+                    ok=true
+
+                    echo "=== /etc/cron.d/reboot_daily ==="
                     if [ -f "$CRON_D_FILE" ]; then
                         cat "$CRON_D_FILE"
                     else
                         echo "  (not found — reboot not scheduled)"
+                        ok=false
                     fi
+
                     echo "=== User crontab (should be empty for reboot) ==="
-                    crontab -l 2>/dev/null | grep -i reboot && echo "  WARNING: old broken entry still present — run option 2 then 1 to fix" || echo "  (clean)"
+                    if crontab -l 2>/dev/null | grep -qi reboot; then
+                        crontab -l 2>/dev/null | grep -i reboot
+                        echo "  WARNING: old broken entry still present — run option 2 then 1 to fix"
+                        ok=false
+                    else
+                        echo "  (clean)"
+                    fi
+
                     echo "=== Reboot script ==="
                     if [ -f "$REBOOT_SCRIPT_PATH" ]; then
                         echo "  Found: $REBOOT_SCRIPT_PATH"
                         cat "$REBOOT_SCRIPT_PATH"
                     else
                         echo "  Not found at $REBOOT_SCRIPT_PATH"
+                        ok=false
                     fi
+
                     echo "=== Last 5 reboots ==="
                     if ls /var/log/syslog* >/dev/null 2>&1; then
                         grep -h "Linux version" /var/log/syslog* 2>/dev/null | awk '{print $1,$2,$3}' | tail -5 || echo "  (no boot entries in syslog)"
@@ -149,6 +163,13 @@ while true; do
                         last reboot -n 5 | grep -v "^$\|^wtmp" || echo "  (no reboot entries found)"
                     else
                         echo "  Last boot: $(uptime -s 2>/dev/null || who -b 2>/dev/null | awk '{print $3, $4}' || echo 'unknown')"
+                    fi
+
+                    echo ""
+                    if [ "$ok" = true ]; then
+                        printf "${GREEN}✓ All prerequisites met — daily reboot is configured correctly.${RESET}\n"
+                    else
+                        printf "${RED}✗ Prerequisites missing — daily reboot may not work.${RESET}\n"
                     fi
                     ;;
                 *)
