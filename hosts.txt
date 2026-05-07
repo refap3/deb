@@ -1,0 +1,12 @@
+# hosts.txt — pinginfoview host list
+# One entry per line: hostname, FQDN, or IP address
+# Inline comments are supported; blank lines are ignored
+
+# Local network
+192.168.1.1        # router/gateway
+mycloud.pi.hole
+
+# Internet
+google.com
+8.8.8.8            # Google DNS
+1.1.1.1            # Cloudflare DNS

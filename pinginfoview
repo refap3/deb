@@ -1,0 +1,379 @@
+#!/usr/bin/env bash
+# pinginfoview — terminal host-ping monitor
+# Usage: pinginfoview [hosts_file]
+
+VERSION="1.0"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+HOSTS_FILE="${1:-${SCRIPT_DIR}/hosts.txt}"
+TMP_BASE="/tmp/pinginfoview_$$"
+REFRESH=2
+OS_TYPE="$(uname -s)"
+
+# ── colours / symbols ──────────────────────────────────────────────────────
+CG='\033[0;32m'; CR='\033[0;31m'; CB='\033[1m'; CD='\033[2m'
+RS='\033[0m'
+OK_SYM='✓'; FAIL_SYM='✗'
+
+# ── state ──────────────────────────────────────────────────────────────────
+hosts=()
+SORT_MODE="H"   # H=hostname  I=ip  S=status  T=time
+SORT_REV=0      # 0=ascending  1=descending  (H/I/S; T uses T_CYCLE parity)
+T_CYCLE=0       # 0=last-fail↑  1=last-fail↓  2=first-fail↑  3=first-fail↓
+
+declare -a st_status st_ip st_ok st_fail \
+           st_first_ok st_last_ok st_first_fail st_last_fail
+
+# ── cleanup ────────────────────────────────────────────────────────────────
+cleanup() {
+    trap - EXIT INT TERM HUP
+    tput rmcup  2>/dev/null || true
+    tput cnorm  2>/dev/null || true
+    rm -rf "$TMP_BASE"
+    exit 0
+}
+trap cleanup EXIT INT TERM HUP
+
+# ── load hosts ─────────────────────────────────────────────────────────────
+load_hosts() {
+    hosts=()
+    if [[ ! -f "$HOSTS_FILE" ]]; then
+        echo "Error: hosts file not found: $HOSTS_FILE" >&2
+        echo "Create $HOSTS_FILE with one hostname or IP per line." >&2
+        exit 1
+    fi
+    while IFS= read -r line; do
+        line="${line%%#*}"          # strip inline comments
+        read -r line <<< "$line"   # trim leading/trailing whitespace
+        [[ -z "$line" ]] && continue
+        hosts+=("$line")
+    done < "$HOSTS_FILE"
+    if [[ ${#hosts[@]} -eq 0 ]]; then
+        echo "Error: no hosts found in $HOSTS_FILE" >&2
+        exit 1
+    fi
+}
+
+# ── state init ─────────────────────────────────────────────────────────────
+init_state() {
+    rm -rf "$TMP_BASE"
+    mkdir -p "$TMP_BASE"
+    local i
+    for i in "${!hosts[@]}"; do
+        local d="$TMP_BASE/$i"
+        mkdir -p "$d"
+        printf "unknown\n" > "$d/status"
+        printf "0\n"       > "$d/ok"
+        printf "0\n"       > "$d/fail"
+        printf "\n"        > "$d/ip"
+        printf "\n"        > "$d/first_ok"
+        printf "\n"        > "$d/last_ok"
+        printf "\n"        > "$d/first_fail"
+        printf "\n"        > "$d/last_fail"
+    done
+}
+
+# ── IP resolution ──────────────────────────────────────────────────────────
+resolve_ip() {
+    local host="$1"
+    [[ "$host" =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ ]] && echo "$host" && return
+    local ip=""
+    if [[ "$OS_TYPE" == "Darwin" ]]; then
+        ip=$(dig +short "$host" 2>/dev/null \
+             | grep -E '^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$' | head -1)
+        [[ -z "$ip" ]] && \
+            ip=$(host "$host" 2>/dev/null | awk '/has address/{print $NF; exit}')
+    else
+        ip=$(getent hosts "$host" 2>/dev/null | awk '{print $1; exit}')
+        [[ -z "$ip" ]] && \
+            ip=$(dig +short "$host" 2>/dev/null \
+                 | grep -E '^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$' | head -1)
+    fi
+    echo "$ip"
+}
+
+# ── ping worker (runs in background) ───────────────────────────────────────
+ping_host() {
+    local i="$1" host="$2"
+    local d="$TMP_BASE/$i"
+
+    local ip
+    ip=$(< "$d/ip")
+    if [[ -z "$ip" ]]; then
+        ip=$(resolve_ip "$host")
+        printf "%s\n" "$ip" > "$d/ip"
+    fi
+
+    local now
+    now=$(date +%s)
+
+    local ping_ok=1
+    if [[ "$OS_TYPE" == "Darwin" ]]; then
+        ping -c1 -t1 -q "$host" &>/dev/null || ping_ok=0
+    else
+        ping -c1 -W1 -q "$host" &>/dev/null || ping_ok=0
+    fi
+
+    if (( ping_ok )); then
+        printf "up\n" > "$d/status"
+        local n; n=$(< "$d/ok"); printf "%d\n" $((n + 1)) > "$d/ok"
+        local fo; fo=$(< "$d/first_ok")
+        [[ -z "$fo" ]] && printf "%d\n" "$now" > "$d/first_ok"
+        printf "%d\n" "$now" > "$d/last_ok"
+    else
+        printf "down\n" > "$d/status"
+        local n; n=$(< "$d/fail"); printf "%d\n" $((n + 1)) > "$d/fail"
+        local ff; ff=$(< "$d/first_fail")
+        [[ -z "$ff" ]] && printf "%d\n" "$now" > "$d/first_fail"
+        printf "%d\n" "$now" > "$d/last_fail"
+    fi
+}
+
+trigger_pings() {
+    local i
+    for i in "${!hosts[@]}"; do
+        ping_host "$i" "${hosts[$i]}" &
+    done
+}
+
+# ── read all state into arrays ─────────────────────────────────────────────
+read_state() {
+    local i
+    for i in "${!hosts[@]}"; do
+        local d="$TMP_BASE/$i"
+        st_status[$i]=$(    < "$d/status"    ); : "${st_status[$i]:=unknown}"
+        st_ip[$i]=$(        < "$d/ip"        )
+        st_ok[$i]=$(        < "$d/ok"        ); : "${st_ok[$i]:=0}"
+        st_fail[$i]=$(      < "$d/fail"      ); : "${st_fail[$i]:=0}"
+        st_first_ok[$i]=$(  < "$d/first_ok"  )
+        st_last_ok[$i]=$(   < "$d/last_ok"   )
+        st_first_fail[$i]=$(< "$d/first_fail")
+        st_last_fail[$i]=$( < "$d/last_fail" )
+    done
+}
+
+# ── time formatting ────────────────────────────────────────────────────────
+fmt_time() {
+    local epoch="$1"
+    [[ -z "$epoch" ]] && printf "-" && return
+    if [[ "$OS_TYPE" == "Darwin" ]]; then
+        date -r "$epoch" "+%H:%M:%S" 2>/dev/null || printf "?"
+    else
+        date -d "@$epoch" "+%H:%M:%S" 2>/dev/null || printf "?"
+    fi
+}
+
+# ── sorting ────────────────────────────────────────────────────────────────
+sort_key() {
+    local i="$1"
+    case "$SORT_MODE" in
+        H) printf "%s" "${hosts[$i]}" ;;
+        I)
+            local ip="${st_ip[$i]:-}"
+            if [[ "$ip" =~ ^([0-9]+)\.([0-9]+)\.([0-9]+)\.([0-9]+)$ ]]; then
+                printf "%03d%03d%03d%03d" \
+                    "${BASH_REMATCH[1]}" "${BASH_REMATCH[2]}" \
+                    "${BASH_REMATCH[3]}" "${BASH_REMATCH[4]}"
+            else
+                printf "zzz%s" "$ip"
+            fi
+            ;;
+        S)
+            [[ "${st_status[$i]}" == "up" ]] && printf "0" || printf "1"
+            ;;
+        T)
+            case $T_CYCLE in
+                0|1) printf "%010d" "${st_last_fail[$i]:-0}" ;;
+                2|3) printf "%010d" "${st_first_fail[$i]:-0}" ;;
+            esac
+            ;;
+    esac
+}
+
+get_sorted_indices() {
+    local tmp; tmp=$(mktemp)
+    local i
+    for i in "${!hosts[@]}"; do
+        printf "%s\t%d\n" "$(sort_key "$i")" "$i"
+    done > "$tmp"
+    local do_rev=0
+    [[ "$SORT_MODE" == "T" ]] && (( T_CYCLE % 2 == 1 )) && do_rev=1
+    [[ "$SORT_MODE" != "T" ]] && (( SORT_REV ))          && do_rev=1
+    if (( do_rev )); then
+        sort -rk1,1 "$tmp"
+    else
+        sort -k1,1 "$tmp"
+    fi | awk -F'\t' '{print $2}'
+    rm -f "$tmp"
+}
+
+sort_label() {
+    local arr; (( SORT_REV )) && arr="↓" || arr="↑"
+    case "$SORT_MODE" in
+        H) printf "Hostname %s" "$arr" ;;
+        I) printf "IP %s"       "$arr" ;;
+        S) printf "Status %s"   "$arr" ;;
+        T)
+            case $T_CYCLE in
+                0) printf "Last Fail ↑" ;;
+                1) printf "Last Fail ↓" ;;
+                2) printf "First Fail ↑" ;;
+                3) printf "First Fail ↓" ;;
+            esac
+            ;;
+    esac
+}
+
+# ── draw ───────────────────────────────────────────────────────────────────
+draw() {
+    local cols rows
+    cols=$(tput cols)
+    rows=$(tput lines)
+
+    local W_HOST=22 W_IP=16 W_ST=3 W_CNT=11 W_TIME=20
+    local hline
+    hline=$(printf '─%.0s' $(seq 1 "$cols"))
+
+    local data_rows=$(( rows - 6 ))
+    (( data_rows < 0 )) && data_rows=0
+
+    printf "\033[H"
+
+    printf "\033[2K${CB}PingInfoView v%s${RS}  Hosts: %d  Refresh: %ds  Sort: %s\n" \
+        "$VERSION" "${#hosts[@]}" "$REFRESH" "$(sort_label)"
+    printf "\033[2K%s\n" "$hline"
+    printf "\033[2K${CB}%-${W_HOST}s %-${W_IP}s %-${W_ST}s %-${W_CNT}s %-${W_TIME}s %-${W_TIME}s${RS}\n" \
+        "HOST" "IP" "ST" "OK / FAIL" "FAIL: FIRST → LAST" "OK: FIRST → LAST"
+    printf "\033[2K%s\n" "$hline"
+
+    local sorted_indices=()
+    mapfile -t sorted_indices < <(get_sorted_indices)
+
+    local printed=0
+    for i in "${sorted_indices[@]}"; do
+        (( printed >= data_rows )) && break
+
+        local host="${hosts[$i]}"
+        local ip="${st_ip[$i]:-}"
+        local status="${st_status[$i]:-unknown}"
+        local ok="${st_ok[$i]:-0}"
+        local fail="${st_fail[$i]:-0}"
+
+        local ff lf fo lo
+        ff=$(fmt_time "${st_first_fail[$i]:-}")
+        lf=$(fmt_time "${st_last_fail[$i]:-}")
+        fo=$(fmt_time "${st_first_ok[$i]:-}")
+        lo=$(fmt_time "${st_last_ok[$i]:-}")
+
+        local fail_col ok_col
+        [[ "$ff" == "-" ]] && fail_col="-" || fail_col="${ff}→${lf}"
+        [[ "$fo" == "-" ]] && ok_col="-"   || ok_col="${fo}→${lo}"
+
+        local sym color
+        case "$status" in
+            up)   sym="$OK_SYM";   color="$CG" ;;
+            down) sym="$FAIL_SYM"; color="$CR" ;;
+            *)    sym="?";          color="$CD" ;;
+        esac
+
+        printf "\033[2K${color}%-${W_HOST}s${RS} %-${W_IP}s ${color}%-${W_ST}s${RS} %-${W_CNT}s %-${W_TIME}s %-${W_TIME}s\n" \
+            "${host:0:$W_HOST}" "${ip:0:$W_IP}" "$sym" \
+            "${ok}/${fail}" \
+            "${fail_col:0:$W_TIME}" "${ok_col:0:$W_TIME}"
+
+        (( printed++ ))
+    done
+
+    while (( printed < data_rows )); do
+        printf "\033[2K\n"; (( printed++ ))
+    done
+
+    printf "\033[2K%s\n" "$hline"
+    printf "\033[2K${CD}[H]ost  [I]P  [S]tatus  [T]ime  [R]efresh  [E]dit hosts.txt  [Q/ESC] Quit${RS}"
+}
+
+# ── key handlers ───────────────────────────────────────────────────────────
+prompt_refresh() {
+    local rows; rows=$(tput lines)
+    tput cup $((rows - 1)) 0
+    printf "\033[2K${CB}New refresh rate in seconds (≥1): ${RS}"
+    tput cnorm
+    local val
+    read -r val
+    tput civis
+    [[ "$val" =~ ^[1-9][0-9]*$ ]] && REFRESH="$val"
+}
+
+edit_hosts() {
+    tput rmcup
+    tput cnorm
+    nano "$HOSTS_FILE"
+    load_hosts
+    init_state
+    trigger_pings
+    tput smcup
+    tput civis
+    clear
+}
+
+handle_key() {
+    local key="$1"
+    case "${key^^}" in
+        H|I|S)
+            local m="${key^^}"
+            if [[ "$SORT_MODE" == "$m" ]]; then
+                SORT_REV=$(( 1 - SORT_REV ))
+            else
+                SORT_MODE="$m"; SORT_REV=0
+            fi
+            ;;
+        T)
+            if [[ "$SORT_MODE" == "T" ]]; then
+                T_CYCLE=$(( (T_CYCLE + 1) % 4 ))
+            else
+                SORT_MODE="T"; T_CYCLE=0
+            fi
+            ;;
+        R) prompt_refresh ;;
+        E) edit_hosts ;;
+        Q) cleanup ;;
+    esac
+}
+
+# ── main ───────────────────────────────────────────────────────────────────
+main() {
+    load_hosts
+    init_state
+
+    tput smcup
+    tput civis
+    clear
+
+    trigger_pings
+    local last_ping
+    last_ping=$(date +%s)
+
+    while true; do
+        read_state
+        draw
+
+        local key=""
+        if read -rsn1 -t "$REFRESH" key 2>/dev/null; then
+            if [[ "$key" == $'\x1b' ]]; then
+                local seq=""
+                read -rsn2 -t 0.05 seq 2>/dev/null || true
+                [[ -z "$seq" ]] && cleanup
+                key=""
+            fi
+            [[ -n "$key" ]] && handle_key "$key"
+        fi
+
+        local now
+        now=$(date +%s)
+        if (( now - last_ping >= REFRESH )); then
+            trigger_pings
+            last_ping=$now
+        fi
+    done
+}
+
+main

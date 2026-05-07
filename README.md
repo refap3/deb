@@ -102,6 +102,42 @@ git clone --depth 1 https://github.com/refap3/deb ~/deb
 |--------|-------------|
 | `disk_speed_test` | 128 MB read/write benchmark on the current directory; rates result 1–10. Alias: `dst` |
 | `map_smb_share` | Mounts a CIFS/SMB share and adds it to `/etc/fstab` — **edit variables at the top before running** |
+| `pinginfoview` | Interactive full-screen terminal ping monitor — live status table for a list of hosts/IPs |
+
+---
+
+## pinginfoview — terminal ping monitor
+
+Interactive full-screen terminal tool that pings a list of hosts/IPs and
+shows their live status in a table.
+
+```bash
+~/deb/pinginfoview              # uses hosts.txt next to the script
+~/deb/pinginfoview /path/to/hosts.txt
+```
+
+Edit `hosts.txt` — one hostname, FQDN, or IP per line; `#` comments supported:
+
+```
+# My network
+192.168.1.1      # router
+google.com
+8.8.8.8
+```
+
+**Keys**
+
+| Key | Action |
+|-----|--------|
+| `H` | Sort by hostname (press again to reverse) |
+| `I` | Sort by IP address (press again to reverse) |
+| `S` | Sort by status (press again to reverse) |
+| `T` | Cycle failure-time sort: Last Fail ↑ → ↓ → First Fail ↑ → ↓ |
+| `R` | Set refresh interval (default: 2 s) |
+| `E` | Edit `hosts.txt` in nano; reloads on save |
+| `Q` / `ESC` | Quit |
+
+Man page: `man ~/deb/man/man1/pinginfoview.1`
 
 ---
 

@@ -1,0 +1,137 @@
+.TH PINGINFOVIEW 1 "2026-05-07" "deb repo" "User Commands"
+.SH NAME
+pinginfoview \- terminal host-ping monitor
+.SH SYNOPSIS
+.B pinginfoview
+.RI [ hosts_file ]
+.SH DESCRIPTION
+.B pinginfoview
+is an interactive full-screen terminal tool that continuously pings a list of
+hosts and displays their status in a live table.
+It is inspired by the Windows utility PingInfoView.
+.PP
+Each host is pinged once per refresh interval (default: 2 seconds).
+The display updates after every round and shows per-host success/failure
+counts and the first and last timestamps of each state.
+.PP
+If
+.I hosts_file
+is not given,
+.B pinginfoview
+looks for
+.I hosts.txt
+in the same directory as the script.
+.SH HOSTS FILE
+The hosts file contains one entry per line.
+Each entry may be a hostname, a fully-qualified domain name, or an IP address.
+Lines beginning with
+.B #
+and inline comments (everything after
+.BR # )
+are ignored.
+Blank lines are skipped.
+.PP
+Example:
+.PP
+.RS
+.nf
+# My network
+192.168.1.1     # router
+google.com
+8.8.8.8         # Google DNS
+.fi
+.RE
+.SH COLUMNS
+.TP
+.B HOST
+Hostname or IP address as listed in the hosts file (truncated to 22 characters).
+.TP
+.B IP
+Resolved IP address (or the address itself for bare IPs).
+.TP
+.B ST
+Status symbol:
+.B ✓
+(green) = reachable,
+.B ✗
+(red) = unreachable,
+.B ?
+= not yet probed.
+.TP
+.B OK / FAIL
+Cumulative count of successful and failed pings since the monitor started.
+.TP
+.B FAIL: FIRST → LAST
+Timestamp of the first and most recent failed ping.
+Displays
+.B \-
+when no failure has occurred.
+.TP
+.B OK: FIRST → LAST
+Timestamp of the first and most recent successful ping.
+Displays
+.B \-
+when no success has occurred.
+.SH KEYS
+.TP
+.B H
+Sort by hostname (default). Press again to reverse direction.
+.TP
+.B I
+Sort by IP address (numeric). Press again to reverse direction.
+.TP
+.B S
+Sort by status (up first). Press again to reverse direction.
+.TP
+.B T
+Sort by failure time, cycling through four modes:
+Last\-Fail ↑ → Last\-Fail ↓ → First\-Fail ↑ → First\-Fail ↓.
+Press
+.B T
+again to advance the cycle.
+.TP
+.B R
+Prompt for a new refresh interval in seconds (minimum 1).
+.TP
+.B E
+Open
+.I hosts.txt
+in
+.BR nano .
+After saving and exiting, the host list is reloaded and monitoring restarts.
+.TP
+.B Q / ESC
+Quit and restore the terminal.
+.SH FILES
+.TP
+.I <script_dir>/hosts.txt
+Default hosts file.
+.TP
+.I /tmp/pinginfoview_<pid>/
+Temporary directory used to exchange state between background ping workers
+and the display loop.
+Removed on exit.
+.SH EXAMPLES
+Run with the default hosts.txt next to the script:
+.PP
+.RS
+~/deb/pinginfoview
+.RE
+.PP
+Run with a custom hosts file:
+.PP
+.RS
+~/deb/pinginfoview /etc/mynetwork/hosts.txt
+.RE
+.SH NOTES
+Pings are sent with a 1-second timeout (\fB-t1\fR on macOS, \fB-W1\fR on Linux).
+ICMP ping may require no special privileges on modern Linux kernels
+with \fBnet.ipv4.ping_group_range\fR set permissively; on others, run as root
+or grant the binary the
+.B cap_net_raw
+capability.
+.SH SEE ALSO
+.BR ping (8),
+.BR nano (1)
+.SH AUTHOR
+Written for the deb repo homelab toolkit.
