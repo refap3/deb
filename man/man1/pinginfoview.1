@@ -105,20 +105,35 @@ Quit and restore the terminal.
 .SH SITE DETECTION
 When launched via the
 .B piv
-alias (from the alias repo), the hosts file is chosen automatically by probing
-local DNS:
+alias (from the alias repo), the hosts file is chosen automatically by
+querying each site's nameserver directly:
 .TP
+Query
+.B 192.168.1.203
+for
 .I ssb8.local
-resolves → loads
+→ loads
 .I ~/deb/hosts-vienna.txt
 .TP
+Query
+.B 192.168.1.198
+for
 .I pi.hole
-resolves → loads
+→ loads
 .I ~/deb/hosts-aigen.txt
 .TP
-(neither resolves)
+(neither answers)
 falls back to
 .I ~/deb/hosts.txt
+.PP
+The query tool is chosen automatically:
+.B dig
+(1 s timeout) if available, otherwise
+.B nslookup
+with explicit server, otherwise a raw
+.B /dev/tcp
+port-53 reachability check.
+This makes detection independent of the system's configured DNS resolver.
 .PP
 The active site is shown in the status bar as
 .BR [VIENNA] ,

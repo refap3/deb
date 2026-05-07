@@ -137,8 +137,9 @@ google.com
 | `E` | Edit `hosts.txt` in nano; reloads on save |
 | `Q` / `ESC` | Quit |
 
-**Site auto-detection** (when launched via `piv` alias): the hosts file is chosen by probing local DNS —
-`ssb8.local` resolves → `hosts-vienna.txt`, `pi.hole` resolves → `hosts-aigen.txt`, neither → `hosts.txt`.
+**Site auto-detection** (when launched via `piv` alias): each site's nameserver is queried directly —
+`192.168.1.203` for `ssb8.local` → `hosts-vienna.txt`, `192.168.1.198` for `pi.hole` → `hosts-aigen.txt`, neither → `hosts.txt`.
+Detection uses `dig` (1 s timeout) if available, falls back to `nslookup` with explicit server, then `/dev/tcp` port-53 reachability — works on minimal Pi OS installs without `dnsutils`.
 The active site is shown in the status bar as `[VIENNA]` / `[AIGEN]`.
 Pass an explicit path to bypass: `piv ~/deb/hosts-vienna.txt`.
 
