@@ -20,6 +20,7 @@ OK_SYM='✓'; FAIL_SYM='✗'
 
 # ── state ──────────────────────────────────────────────────────────────────
 hosts=()
+PING_PIDS=()    # PIDs of current ping round — killed on exit
 SORT_MODE="H"   # H=hostname  I=ip  S=status  T=time
 SORT_REV=0      # 0=ascending  1=descending  (H/I/S; T uses T_CYCLE parity)
 T_CYCLE=0       # 0=last-fail↑  1=last-fail↓  2=first-fail↑  3=first-fail↓
@@ -30,8 +31,14 @@ declare -a st_status st_ip st_ok st_fail \
 # ── cleanup ────────────────────────────────────────────────────────────────
 cleanup() {
     trap - EXIT INT TERM HUP
-    tput rmcup  2>/dev/null || true
-    tput cnorm  2>/dev/null || true
+    tput rmcup 2>/dev/null || true
+    tput cnorm 2>/dev/null || true
+    # Kill any running ping workers before removing their temp dirs
+    local pid
+    for pid in "${PING_PIDS[@]}"; do
+        kill "$pid" 2>/dev/null || true
+    done
+    wait 2>/dev/null || true
     rm -rf "$TMP_BASE"
     exit 0
 }
@@ -133,9 +140,11 @@ ping_host() {
 }
 
 trigger_pings() {
+    PING_PIDS=()
     local i
     for i in "${!hosts[@]}"; do
-        ping_host "$i" "${hosts[$i]}" &
+        ping_host "$i" "${hosts[$i]}" 2>/dev/null &
+        PING_PIDS+=($!)
     done
 }
 
