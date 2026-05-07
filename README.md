@@ -137,6 +137,11 @@ google.com
 | `E` | Edit `hosts.txt` in nano; reloads on save |
 | `Q` / `ESC` | Quit |
 
+**Site auto-detection** (when launched via `piv` alias): the hosts file is chosen by probing local DNS —
+`ssb8.local` resolves → `hosts-vienna.txt`, `pi.hole` resolves → `hosts-aigen.txt`, neither → `hosts.txt`.
+The active site is shown in the status bar as `[VIENNA]` / `[AIGEN]`.
+Pass an explicit path to bypass: `piv ~/deb/hosts-vienna.txt`.
+
 Man page: `man ~/deb/man/man1/pinginfoview.1`
 
 ---

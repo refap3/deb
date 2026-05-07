@@ -9,6 +9,10 @@ TMP_BASE="/tmp/pinginfoview_$$"
 REFRESH=2
 OS_TYPE="$(uname -s)"
 
+# Derive a display label from the hosts filename (e.g. hosts-vienna.txt → VIENNA)
+_b="$(basename "$HOSTS_FILE" .txt)"; _b="${_b#hosts}"; _b="${_b#-}"
+SITE_LABEL="${_b^^}"
+
 # ── colours / symbols ──────────────────────────────────────────────────────
 CG='\033[0;32m'; CR='\033[0;31m'; CB='\033[1m'; CD='\033[2m'
 RS='\033[0m'
@@ -238,8 +242,10 @@ draw() {
 
     printf "\033[H"
 
-    printf "\033[2K${CB}PingInfoView v%s${RS}  Hosts: %d  Refresh: %ds  Sort: %s\n" \
-        "$VERSION" "${#hosts[@]}" "$REFRESH" "$(sort_label)"
+    local site_part=""
+    [[ -n "$SITE_LABEL" ]] && site_part="  ${CB}[${SITE_LABEL}]${RS}"
+    printf "\033[2K${CB}PingInfoView v%s${RS}%s  Hosts: %d  Refresh: %ds  Sort: %s\n" \
+        "$VERSION" "$site_part" "${#hosts[@]}" "$REFRESH" "$(sort_label)"
     printf "\033[2K%s\n" "$hline"
     printf "\033[2K${CB}%-${W_HOST}s %-${W_IP}s %-${W_ST}s %-${W_CNT}s %-${W_TIME}s %-${W_TIME}s${RS}\n" \
         "HOST" "IP" "ST" "OK / FAIL" "FAIL: FIRST → LAST" "OK: FIRST → LAST"

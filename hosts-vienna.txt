@@ -1,0 +1,16 @@
+# hosts-vienna.txt — pinginfoview host list for Vienna network (ssb8.local)
+# One entry per line: hostname, FQDN, or IP address
+# Inline comments are supported; blank lines are ignored
+
+# Infrastructure
+192.168.1.1          # router/gateway
+
+# Servers
+hassio.ssb8.local    # Home Assistant Pi
+es.ssb8.local        # Windows Server (DC)
+192.168.1.119        # q1900 server
+
+# Internet
+google.com
+8.8.8.8              # Google DNS
+1.1.1.1              # Cloudflare DNS

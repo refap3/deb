@@ -102,10 +102,45 @@ After saving and exiting, the host list is reloaded and monitoring restarts.
 .TP
 .B Q / ESC
 Quit and restore the terminal.
+.SH SITE DETECTION
+When launched via the
+.B piv
+alias (from the alias repo), the hosts file is chosen automatically by probing
+local DNS:
+.TP
+.I ssb8.local
+resolves → loads
+.I ~/deb/hosts-vienna.txt
+.TP
+.I pi.hole
+resolves → loads
+.I ~/deb/hosts-aigen.txt
+.TP
+(neither resolves)
+falls back to
+.I ~/deb/hosts.txt
+.PP
+The active site is shown in the status bar as
+.BR [VIENNA] ,
+.BR [AIGEN] ,
+etc.
+Pass an explicit hosts file path to
+.B piv
+to bypass detection.
 .SH FILES
 .TP
 .I <script_dir>/hosts.txt
 Default hosts file.
+.TP
+.I <script_dir>/hosts-vienna.txt
+Vienna network hosts (auto-selected when
+.I ssb8.local
+resolves).
+.TP
+.I <script_dir>/hosts-aigen.txt
+Aigen network hosts (auto-selected when
+.I pi.hole
+resolves).
 .TP
 .I /tmp/pinginfoview_<pid>/
 Temporary directory used to exchange state between background ping workers
