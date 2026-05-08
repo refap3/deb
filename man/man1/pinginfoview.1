@@ -1,4 +1,4 @@
-.TH PINGINFOVIEW 1 "2026-05-08" "deb repo v1.7" "User Commands"
+.TH PINGINFOVIEW 1 "2026-05-08" "deb repo v1.8" "User Commands"
 .SH NAME
 pinginfoview \- terminal host-ping monitor
 .SH SYNOPSIS
@@ -174,8 +174,12 @@ went down — are tracked persistently and remain visible in red even when backg
 is hidden.
 Pressing
 .B B
-also resets all dropout markers, so hosts that came back up revert to dim on the
-next draw cycle.
+also resets all dropout markers and the hostname cache, so hosts that came back up
+revert to dim on the next draw cycle.
+.PP
+Hostnames resolved while a host was reachable are cached internally and remain visible
+in the HOST column even after the host stops responding, so the display stays
+human-readable for the duration of the snapshot session.
 .TP
 .B N
 Exit scan mode and return to normal hosts\-file monitoring.

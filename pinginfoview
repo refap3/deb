@@ -2,7 +2,7 @@
 # pinginfoview — terminal host-ping monitor
 # Usage: pinginfoview [hosts_file]
 
-VERSION="1.7"
+VERSION="1.8"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 HOSTS_FILE="${1:-${SCRIPT_DIR}/hosts.txt}"
 TMP_BASE="/tmp/pinginfoview_$$"
@@ -57,6 +57,7 @@ SNAP_HIDE_BG=0              # 1 = hide unchanged (dim) hosts in snapshot view
 declare -A SNAP_STATUS=()   # ip → "up" recorded at snapshot time
 declare -A SNAP_DROP=()     # ip → 1 once confirmed dropped; stays red until B
 declare -A SNAP_SEEN=()     # ip → 1 for every IP seen up during snapshot (incl. new arrivals)
+declare -A SNAP_NAMES=()    # ip → last known hostname during snapshot (survives host going down)
 
 # ── flash message (shown in status bar for a few seconds) ─────────────────
 FLASH_MSG=""
@@ -363,6 +364,7 @@ enter_scan_mode() {
     SNAP_STATUS=()
     SNAP_DROP=()
     SNAP_SEEN=()
+    SNAP_NAMES=()
     FLASH_MSG=""
     mkdir -p "$TMP_BASE/scan"
     trigger_scan
@@ -382,6 +384,7 @@ exit_scan_mode() {
     SNAP_STATUS=()
     SNAP_DROP=()
     SNAP_SEEN=()
+    SNAP_NAMES=()
     SCAN_HOSTS=(); SCAN_NAMES=(); SCAN_OK=()
     SCAN_UP=(); SCAN_DISPLAY_HOSTS=()
     # Reinitialise normal mode (hosts file may have changed via A)
@@ -556,9 +559,17 @@ draw_scan() {
     # Build display list; in snapshot mode include hosts that went down
     local -a dh=()
     if (( SNAPSHOT_MODE )); then
-        # Record every currently-up IP into SNAP_SEEN (persists new arrivals)
+        # Record every currently-up IP and its name into SNAP_SEEN/SNAP_NAMES
         local ip
-        for ip in "${SCAN_HOSTS[@]}"; do SNAP_SEEN["$ip"]=1; done
+        for ip in "${SCAN_HOSTS[@]}"; do
+            SNAP_SEEN["$ip"]=1
+            local j
+            for j in "${!SCAN_HOSTS[@]}"; do
+                if [[ "${SCAN_HOSTS[$j]}" == "$ip" && -n "${SCAN_NAMES[$j]}" ]]; then
+                    SNAP_NAMES["$ip"]="${SCAN_NAMES[$j]}"; break
+                fi
+            done
+        done
 
         # Promote confirmed dropouts into SNAP_DROP:
         #   baseline hosts (in SNAP_STATUS) that stopped responding
@@ -615,13 +626,14 @@ draw_scan() {
     for (( disp_idx=scroll; disp_idx<total && printed<data_rows; disp_idx++ )); do
         local ip="${dh[$disp_idx]}"
 
-        # Display name from scan arrays
+        # Display name: current scan arrays first, then snapshot name cache
         local dname="$ip" j
         for j in "${!SCAN_HOSTS[@]}"; do
             if [[ "${SCAN_HOSTS[$j]}" == "$ip" && -n "${SCAN_NAMES[$j]}" ]]; then
                 dname="${SCAN_NAMES[$j]}"; break
             fi
         done
+        [[ "$dname" == "$ip" && -n "${SNAP_NAMES[$ip]}" ]] && dname="${SNAP_NAMES[$ip]}"
 
         # Counts and timestamps from per-IP maps
         local okc="${SC_OKC[$ip]:-0}" flc="${SC_FLC[$ip]:-0}"
@@ -900,7 +912,7 @@ handle_key() {
             A) add_host_to_file ;;
             P)
                 if (( SNAPSHOT_MODE )); then
-                    SNAPSHOT_MODE=0; SNAP_HIDE_BG=0; SNAP_STATUS=(); SNAP_DROP=(); SNAP_SEEN=()
+                    SNAPSHOT_MODE=0; SNAP_HIDE_BG=0; SNAP_STATUS=(); SNAP_DROP=(); SNAP_SEEN=(); SNAP_NAMES=()
                 else
                     take_snapshot
                 fi
@@ -910,6 +922,7 @@ handle_key() {
                     SNAP_HIDE_BG=$(( 1 - SNAP_HIDE_BG ))
                     SNAP_DROP=()
                     SNAP_SEEN=()
+                    SNAP_NAMES=()
                     SCAN_CURSOR=0
                 fi
                 ;;

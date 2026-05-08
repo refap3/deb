@@ -180,6 +180,8 @@ Confirmed dropouts (hosts that went red since the snapshot) remain visible in re
 when background is hidden, and stay red until `B` is pressed again (resetting their
 dropout state) or `P` clears the snapshot. This covers both baseline hosts that went
 down and new arrivals that appeared after the snapshot and then disappeared.
+Hostnames resolved while a host was up are cached and preserved in the display after
+the host goes down; `B` resets the name cache along with dropout state.
 
 **Site auto-detection** (when launched via `piv` alias): each site's nameserver is queried directly —
 `192.168.1.203` for `ssb8.local` → `hosts-vienna.txt`, `192.168.1.198` for `pi.hole` → `hosts-aigen.txt`, neither → `hosts.txt`.
