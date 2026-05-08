@@ -125,7 +125,7 @@ google.com
 8.8.8.8
 ```
 
-**Keys**
+**Keys — normal mode**
 
 | Key | Action |
 |-----|--------|
@@ -135,7 +135,35 @@ google.com
 | `T` | Cycle failure-time sort: Last Fail ↑ → ↓ → First Fail ↑ → ↓ |
 | `R` | Set refresh interval (default: 2 s) |
 | `E` | Edit `hosts.txt` in nano; reloads on save |
+| `N` | Enter **scan mode** (discover live hosts on the current /24 subnet) |
 | `Q` / `ESC` | Quit |
+
+**Scan mode** (`N` to enter/exit)
+
+Ignores the hosts file and pings every address on the local /24 subnet.
+Only responding hosts are shown, each with a green `✓`.
+Reverse-DNS names are resolved once per discovered IP.
+
+| Key | Action |
+|-----|--------|
+| `J` / `↓` | Move selection cursor down |
+| `K` / `↑` | Move selection cursor up |
+| `A` | Add highlighted host to the active hosts file |
+| `P` | Toggle **snapshot mode** |
+| `N` | Exit scan mode, return to hosts-file view |
+| `Q` | Quit |
+
+**Snapshot mode** (`P` in scan mode)
+
+Records the set of live hosts at the moment `P` is pressed, then highlights
+changes as they happen:
+
+- **Bright green** — host appeared after the snapshot was taken
+- **Bright red** — host was up at snapshot time but is no longer responding
+- **Dim** — no change from snapshot baseline
+
+Press `P` again to clear the snapshot and resume the normal scan view.
+The status bar shows `[SNAPSHOT HH:MM:SS]` with the time the baseline was taken.
 
 **Site auto-detection** (when launched via `piv` alias): each site's nameserver is queried directly —
 `192.168.1.203` for `ssb8.local` → `hosts-vienna.txt`, `192.168.1.198` for `pi.hole` → `hosts-aigen.txt`, neither → `hosts.txt`.

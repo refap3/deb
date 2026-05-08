@@ -1,4 +1,4 @@
-.TH PINGINFOVIEW 1 "2026-05-07" "deb repo" "User Commands"
+.TH PINGINFOVIEW 1 "2026-05-08" "deb repo v1.1" "User Commands"
 .SH NAME
 pinginfoview \- terminal host-ping monitor
 .SH SYNOPSIS
@@ -73,6 +73,7 @@ Displays
 .B \-
 when no success has occurred.
 .SH KEYS
+.SS Normal mode
 .TP
 .B H
 Sort by hostname (default). Press again to reverse direction.
@@ -100,8 +101,62 @@ in
 .BR nano .
 After saving and exiting, the host list is reloaded and monitoring restarts.
 .TP
+.B N
+Enter scan mode.
+.TP
 .B Q / ESC
 Quit and restore the terminal.
+.SS Scan mode
+Scan mode ignores the hosts file and pings every address in the local /24
+subnet, displaying only responding hosts.
+The active subnet is auto\-detected from the machine's default-route interface.
+Reverse\-DNS names are resolved once per newly-discovered IP.
+.TP
+.B J / Down-arrow
+Move the selection cursor down one row.
+.TP
+.B K / Up-arrow
+Move the selection cursor up one row.
+.TP
+.B A
+Append the highlighted host to the active hosts file.
+If a hostname was resolved via reverse DNS it is recorded as a comment.
+Duplicate IPs are silently skipped.
+A flash message in the status bar confirms each addition.
+.TP
+.B P
+Toggle snapshot mode (see below).
+.TP
+.B N
+Exit scan mode and return to normal hosts\-file monitoring.
+.TP
+.B Q
+Quit and restore the terminal.
+.SS Snapshot mode
+Snapshot mode is entered by pressing
+.B P
+while in scan mode.
+At that moment the set of live hosts is recorded as a baseline.
+Subsequent display refreshes colour\-code changes relative to that baseline:
+.TP
+Bright green
+The host appeared after the snapshot was taken (new arrival).
+.TP
+Bright red
+The host was up at snapshot time but is no longer responding.
+.TP
+Dim
+No change from the baseline.
+.PP
+Hosts that went down after the snapshot remain visible (in red) even after they
+stop responding, so no events are missed.
+.PP
+The status bar shows
+.BI [SNAPSHOT\  HH:MM:SS]
+with the time the baseline was recorded.
+Press
+.B P
+again to clear the snapshot and resume the normal scan view.
 .SH SITE DETECTION
 When launched via the
 .B piv

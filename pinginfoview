@@ -2,7 +2,7 @@
 # pinginfoview — terminal host-ping monitor
 # Usage: pinginfoview [hosts_file]
 
-VERSION="1.0"
+VERSION="1.1"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 HOSTS_FILE="${1:-${SCRIPT_DIR}/hosts.txt}"
 TMP_BASE="/tmp/pinginfoview_$$"
@@ -15,10 +15,11 @@ SITE_LABEL="${_b^^}"
 
 # ── colours / symbols ──────────────────────────────────────────────────────
 CG=$'\033[0;32m'; CR=$'\033[0;31m'; CB=$'\033[1m'; CD=$'\033[2m'
+CGG=$'\033[1;32m'; CRR=$'\033[1;31m'   # bright variants for snapshot deltas
 RS=$'\033[0m'
 OK_SYM='✓'; FAIL_SYM='✗'
 
-# ── state ──────────────────────────────────────────────────────────────────
+# ── normal-mode state ──────────────────────────────────────────────────────
 hosts=()
 PING_PIDS=()    # PIDs of current ping round — killed on exit
 SORT_MODE="H"   # H=hostname  I=ip  S=status  T=time
@@ -28,14 +29,34 @@ T_CYCLE=0       # 0=last-fail↑  1=last-fail↓  2=first-fail↑  3=first-fail�
 declare -a st_status st_ip st_ok st_fail \
            st_first_ok st_last_ok st_first_fail st_last_fail
 
+# ── scan mode state ────────────────────────────────────────────────────────
+SCAN_MODE=0
+SCAN_CURSOR=0
+SCAN_SUBNET=""
+SCAN_SUBNET_DISPLAY=""
+SCAN_HOSTS=()
+SCAN_NAMES=()
+SCAN_OK=()
+SCAN_PIDS=()
+SCAN_DISPLAY_HOSTS=()   # ordered list built by draw_scan; read by add_host_to_file
+declare -A SCAN_UP=()   # ip → 1 for currently responding hosts
+
+# ── snapshot mode state ────────────────────────────────────────────────────
+SNAPSHOT_MODE=0
+SNAPSHOT_TIME=""
+declare -A SNAP_STATUS=()   # ip → "up" recorded at snapshot time
+
+# ── flash message (shown in status bar for a few seconds) ─────────────────
+FLASH_MSG=""
+FLASH_UNTIL=0
+
 # ── cleanup ────────────────────────────────────────────────────────────────
 cleanup() {
     trap - EXIT INT TERM HUP
     tput rmcup 2>/dev/null || true
     tput cnorm 2>/dev/null || true
-    # Kill any running ping workers before removing their temp dirs
     local pid
-    for pid in "${PING_PIDS[@]}"; do
+    for pid in "${PING_PIDS[@]}" "${SCAN_PIDS[@]}"; do
         kill "$pid" 2>/dev/null || true
     done
     wait 2>/dev/null || true
@@ -148,7 +169,7 @@ trigger_pings() {
     done
 }
 
-# ── read all state into arrays ─────────────────────────────────────────────
+# ── read all normal-mode state into arrays ─────────────────────────────────
 read_state() {
     local i
     for i in "${!hosts[@]}"; do
@@ -162,6 +183,286 @@ read_state() {
         st_first_fail[$i]=$(< "$d/first_fail")
         st_last_fail[$i]=$( < "$d/last_fail" )
     done
+}
+
+# ── scan mode: subnet detection ────────────────────────────────────────────
+detect_subnet() {
+    local iface local_ip
+    if [[ "$OS_TYPE" == "Darwin" ]]; then
+        iface=$(route get default 2>/dev/null | awk '/interface:/{print $2}')
+        [[ -n "$iface" ]] && local_ip=$(ipconfig getifaddr "$iface" 2>/dev/null)
+    fi
+    if [[ -z "$local_ip" ]]; then
+        local_ip=$(ip -4 route get 1 2>/dev/null \
+            | awk '{for(i=1;i<=NF;i++) if($i=="src"){print $(i+1); exit}}')
+    fi
+    [[ -z "$local_ip" ]] && local_ip=$(hostname -I 2>/dev/null | awk '{print $1}')
+    [[ -z "$local_ip" ]] && return 1
+    SCAN_SUBNET="${local_ip%.*}"
+    SCAN_SUBNET_DISPLAY="${SCAN_SUBNET}.0/24"
+}
+
+# ── scan mode: per-IP ping worker (background) ─────────────────────────────
+scan_one_ip() {
+    local ip="$1"
+    local d="$TMP_BASE/scan/$ip"
+    mkdir -p "$d"
+
+    local ping_ok=1
+    if [[ "$OS_TYPE" == "Darwin" ]]; then
+        ping -c1 -t1 -q "$ip" &>/dev/null || ping_ok=0
+    else
+        ping -c1 -W1 -q "$ip" &>/dev/null || ping_ok=0
+    fi
+
+    if (( ping_ok )); then
+        printf "up\n" > "$d/status"
+        local n=0
+        [[ -f "$d/ok" ]] && n=$(< "$d/ok")
+        printf "%d\n" $((n + 1)) > "$d/ok"
+        # Reverse DNS — attempt once per discovered IP
+        if [[ ! -f "$d/name_done" ]]; then
+            local name=""
+            if [[ "$OS_TYPE" == "Darwin" ]]; then
+                name=$(dig +short +time=1 -x "$ip" 2>/dev/null | sed 's/\.$//')
+                [[ -z "$name" ]] && \
+                    name=$(host "$ip" 2>/dev/null \
+                        | awk '/domain name pointer/{print $NF}' | sed 's/\.$//')
+            else
+                name=$(dig +short +time=1 -x "$ip" 2>/dev/null | sed 's/\.$//')
+                [[ -z "$name" ]] && \
+                    name=$(getent hosts "$ip" 2>/dev/null | awk '{print $2}')
+            fi
+            printf "%s\n" "$name" > "$d/name"
+            touch "$d/name_done"
+        fi
+    else
+        printf "down\n" > "$d/status"
+    fi
+}
+
+trigger_scan() {
+    SCAN_PIDS=()
+    local i
+    for (( i=1; i<=254; i++ )); do
+        scan_one_ip "${SCAN_SUBNET}.$i" 2>/dev/null &
+        SCAN_PIDS+=($!)
+    done
+}
+
+# ── scan mode: read scan results into arrays ───────────────────────────────
+read_scan_state() {
+    SCAN_HOSTS=()
+    SCAN_NAMES=()
+    SCAN_OK=()
+    SCAN_UP=()
+    local i
+    for (( i=1; i<=254; i++ )); do
+        local ip="${SCAN_SUBNET}.$i"
+        local d="$TMP_BASE/scan/$ip"
+        [[ ! -d "$d" ]] && continue
+        local status=""
+        [[ -f "$d/status" ]] && status=$(< "$d/status")
+        [[ "$status" != "up" ]] && continue
+        SCAN_HOSTS+=("$ip")
+        SCAN_UP["$ip"]=1
+        local name=""
+        [[ -f "$d/name" ]] && name=$(< "$d/name")
+        SCAN_NAMES+=("$name")
+        local ok=0
+        [[ -f "$d/ok" ]] && ok=$(< "$d/ok")
+        SCAN_OK+=("$ok")
+    done
+}
+
+# ── scan mode: enter / exit ────────────────────────────────────────────────
+enter_scan_mode() {
+    if ! detect_subnet; then
+        FLASH_MSG="Could not detect local subnet"
+        FLASH_UNTIL=$(( $(date +%s) + 3 ))
+        return
+    fi
+    SCAN_MODE=1
+    SCAN_CURSOR=0
+    SNAPSHOT_MODE=0
+    SNAP_STATUS=()
+    FLASH_MSG=""
+    mkdir -p "$TMP_BASE/scan"
+    trigger_scan
+}
+
+exit_scan_mode() {
+    local pid
+    for pid in "${SCAN_PIDS[@]}"; do
+        kill "$pid" 2>/dev/null || true
+    done
+    SCAN_PIDS=()
+    rm -rf "$TMP_BASE/scan"
+    SCAN_MODE=0
+    SNAPSHOT_MODE=0
+    SCAN_CURSOR=0
+    SNAP_STATUS=()
+    SCAN_HOSTS=(); SCAN_NAMES=(); SCAN_OK=()
+    SCAN_UP=(); SCAN_DISPLAY_HOSTS=()
+    # Reinitialise normal mode (hosts file may have changed via A)
+    load_hosts
+    init_state
+    trigger_pings
+}
+
+# ── snapshot mode: take / clear ────────────────────────────────────────────
+take_snapshot() {
+    SNAPSHOT_MODE=1
+    SNAPSHOT_TIME=$(date +%H:%M:%S)
+    SNAP_STATUS=()
+    local ip
+    for ip in "${SCAN_HOSTS[@]}"; do
+        SNAP_STATUS["$ip"]="up"
+    done
+}
+
+# ── scan mode: add highlighted host to hosts file ──────────────────────────
+add_host_to_file() {
+    local total="${#SCAN_DISPLAY_HOSTS[@]}"
+    (( total == 0 )) && return
+    (( SCAN_CURSOR >= total )) && return
+
+    local ip="${SCAN_DISPLAY_HOSTS[$SCAN_CURSOR]}"
+    [[ -z "$ip" ]] && return
+
+    if grep -qF "$ip" "$HOSTS_FILE" 2>/dev/null; then
+        FLASH_MSG="${ip} already in $(basename "$HOSTS_FILE")"
+        FLASH_UNTIL=$(( $(date +%s) + 2 ))
+        return
+    fi
+
+    # Find hostname from current scan state
+    local name="" j
+    for j in "${!SCAN_HOSTS[@]}"; do
+        if [[ "${SCAN_HOSTS[$j]}" == "$ip" ]]; then
+            name="${SCAN_NAMES[$j]}"
+            break
+        fi
+    done
+
+    if [[ -n "$name" && "$name" != "$ip" ]]; then
+        printf "%s  # %s\n" "$ip" "$name" >> "$HOSTS_FILE"
+    else
+        printf "%s\n" "$ip" >> "$HOSTS_FILE"
+    fi
+
+    FLASH_MSG="Added ${ip} → $(basename "$HOSTS_FILE")"
+    FLASH_UNTIL=$(( $(date +%s) + 3 ))
+}
+
+# ── draw scan mode ─────────────────────────────────────────────────────────
+draw_scan() {
+    local cols rows
+    cols=$(tput cols)
+    rows=$(tput lines)
+
+    local W_HOST=24 W_IP=16 W_ST=3 W_CNT=6
+    local hline
+    hline=$(printf '─%.0s' $(seq 1 "$cols"))
+    local data_rows=$(( rows - 6 ))
+    (( data_rows < 0 )) && data_rows=0
+
+    printf "\033[H"
+
+    # Status bar
+    local mode_label
+    if (( SNAPSHOT_MODE )); then
+        mode_label="${CB}[SNAPSHOT ${SNAPSHOT_TIME}]${RS}"
+    else
+        mode_label="${CB}[SCAN ${SCAN_SUBNET_DISPLAY}]${RS}"
+    fi
+
+    local flash_part=""
+    if [[ -n "$FLASH_MSG" ]] && (( $(date +%s) < FLASH_UNTIL )); then
+        flash_part="  ${CG}${FLASH_MSG}${RS}"
+    else
+        FLASH_MSG=""
+    fi
+
+    printf "\033[2K${CB}PingInfoView v%s${RS}  %s  Found: %d%s\n" \
+        "$VERSION" "$mode_label" "${#SCAN_HOSTS[@]}" "$flash_part"
+    printf "\033[2K%s\n" "$hline"
+    printf "\033[2K${CB}%-${W_HOST}s %-${W_IP}s %-${W_ST}s %-${W_CNT}s${RS}\n" \
+        "HOST" "IP" "ST" "OK"
+    printf "\033[2K%s\n" "$hline"
+
+    # Build display list; in snapshot mode include hosts that went down
+    local -a dh=()
+    if (( SNAPSHOT_MODE )); then
+        local -A seen=()
+        local ip
+        for ip in "${SCAN_HOSTS[@]}";    do seen["$ip"]=1; done
+        for ip in "${!SNAP_STATUS[@]}";  do seen["$ip"]=1; done
+        mapfile -t dh < <(printf '%s\n' "${!seen[@]}" \
+            | sort -t. -k1,1n -k2,2n -k3,3n -k4,4n)
+    else
+        dh=("${SCAN_HOSTS[@]}")
+    fi
+
+    SCAN_DISPLAY_HOSTS=("${dh[@]}")
+
+    # Clamp cursor
+    local total="${#dh[@]}"
+    (( total > 0 && SCAN_CURSOR >= total )) && SCAN_CURSOR=$(( total - 1 ))
+    (( SCAN_CURSOR < 0 )) && SCAN_CURSOR=0
+
+    # Scroll window so the cursor row is always visible
+    local scroll=0
+    (( total > data_rows && SCAN_CURSOR >= data_rows )) && \
+        scroll=$(( SCAN_CURSOR - data_rows + 1 ))
+
+    local printed=0 disp_idx
+    for (( disp_idx=scroll; disp_idx<total && printed<data_rows; disp_idx++ )); do
+        local ip="${dh[$disp_idx]}"
+
+        # Lookup display name and ok-count from scan arrays
+        local dname="$ip" dok=0 j
+        for j in "${!SCAN_HOSTS[@]}"; do
+            if [[ "${SCAN_HOSTS[$j]}" == "$ip" ]]; then
+                [[ -n "${SCAN_NAMES[$j]}" ]] && dname="${SCAN_NAMES[$j]}"
+                dok="${SCAN_OK[$j]}"
+                break
+            fi
+        done
+
+        # Colour / symbol
+        local sym color
+        if (( SNAPSHOT_MODE )); then
+            local snap_st="${SNAP_STATUS[$ip]:-absent}"
+            local cur_up="${SCAN_UP[$ip]:-0}"
+            if (( cur_up )) && [[ "$snap_st" != "up" ]]; then
+                sym="$OK_SYM";   color="$CGG"   # newly appeared → bright green
+            elif (( ! cur_up )) && [[ "$snap_st" == "up" ]]; then
+                sym="$FAIL_SYM"; color="$CRR"   # went down → bright red
+            else
+                sym="$OK_SYM";   color="$CD"    # no change → dim
+            fi
+        else
+            sym="$OK_SYM"; color="$CG"
+        fi
+
+        if (( disp_idx == SCAN_CURSOR )); then
+            printf "\033[2K\033[7m${color}%-${W_HOST}s %-${W_IP}s %-${W_ST}s %-${W_CNT}s${RS}\033[27m\n" \
+                "${dname:0:$W_HOST}" "${ip:0:$W_IP}" "$sym" "$dok"
+        else
+            printf "\033[2K${color}%-${W_HOST}s${RS} %-${W_IP}s ${color}%-${W_ST}s${RS} %-${W_CNT}s\n" \
+                "${dname:0:$W_HOST}" "${ip:0:$W_IP}" "$sym" "$dok"
+        fi
+
+        (( printed++ ))
+    done
+
+    while (( printed < data_rows )); do
+        printf "\033[2K\n"; (( printed++ ))
+    done
+
+    printf "\033[2K%s\n" "$hline"
+    printf "\033[2K${CD}[N]=exit scan  [A]=add to hosts  [P]=snapshot  [J/K/↑↓]=select  [Q]=quit${RS}"
 }
 
 # ── time formatting ────────────────────────────────────────────────────────
@@ -236,7 +537,7 @@ sort_label() {
     esac
 }
 
-# ── draw ───────────────────────────────────────────────────────────────────
+# ── draw normal mode ───────────────────────────────────────────────────────
 draw() {
     local cols rows
     cols=$(tput cols)
@@ -303,7 +604,7 @@ draw() {
     done
 
     printf "\033[2K%s\n" "$hline"
-    printf "\033[2K${CD}[H]ost  [I]P  [S]tatus  [T]ime  [R]efresh  [E]dit hosts.txt  [Q/ESC] Quit${RS}"
+    printf "\033[2K${CD}[H]ost  [I]P  [S]tatus  [T]ime  [R]efresh  [E]dit hosts.txt  [N]=scan  [Q/ESC] Quit${RS}"
 }
 
 # ── key handlers ───────────────────────────────────────────────────────────
@@ -331,7 +632,33 @@ edit_hosts() {
 }
 
 handle_key() {
-    local key="$1"
+    local key="$1" seq="${2:-}"
+
+    if (( SCAN_MODE )); then
+        local total="${#SCAN_DISPLAY_HOSTS[@]}"
+        # Arrow keys (escape sequences) and vim-style J/K
+        if [[ "$seq" == "[A" ]] || [[ "${key^^}" == "K" ]]; then
+            (( SCAN_CURSOR > 0 )) && (( SCAN_CURSOR-- ))
+            return
+        elif [[ "$seq" == "[B" ]] || [[ "${key^^}" == "J" ]]; then
+            (( total > 0 && SCAN_CURSOR < total - 1 )) && (( SCAN_CURSOR++ ))
+            return
+        fi
+        case "${key^^}" in
+            N) exit_scan_mode ;;
+            A) add_host_to_file ;;
+            P)
+                if (( SNAPSHOT_MODE )); then
+                    SNAPSHOT_MODE=0; SNAP_STATUS=()
+                else
+                    take_snapshot
+                fi
+                ;;
+            Q) cleanup ;;
+        esac
+        return
+    fi
+
     case "${key^^}" in
         H|I|S)
             local m="${key^^}"
@@ -348,6 +675,7 @@ handle_key() {
                 SORT_MODE="T"; T_CYCLE=0
             fi
             ;;
+        N) enter_scan_mode ;;
         R) prompt_refresh ;;
         E) edit_hosts ;;
         Q) cleanup ;;
@@ -368,15 +696,23 @@ main() {
     last_ping=$(date +%s)
 
     while true; do
-        read_state
-        draw
+        if (( SCAN_MODE )); then
+            read_scan_state
+            draw_scan
+        else
+            read_state
+            draw
+        fi
 
-        local key=""
+        local key="" seq=""
         if read -rsn1 -t "$REFRESH" key 2>/dev/null; then
             if [[ "$key" == $'\x1b' ]]; then
-                local seq=""
                 read -rsn2 -t 0.05 seq 2>/dev/null || true
-                [[ -z "$seq" ]] && cleanup
+                if [[ -z "$seq" ]]; then
+                    cleanup
+                else
+                    handle_key "" "$seq"
+                fi
                 key=""
             fi
             [[ -n "$key" ]] && handle_key "$key"
@@ -385,7 +721,11 @@ main() {
         local now
         now=$(date +%s)
         if (( now - last_ping >= REFRESH )); then
-            trigger_pings
+            if (( SCAN_MODE )); then
+                trigger_scan
+            else
+                trigger_pings
+            fi
             last_ping=$now
         fi
     done
