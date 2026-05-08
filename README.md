@@ -146,12 +146,15 @@ google.com
 Ignores the hosts file and pings every address on the local /24 subnet.
 Only responding hosts are shown, each with a green `✓`.
 Reverse-DNS names are resolved once per discovered IP.
+Columns match normal mode: HOST, IP, ST, OK/FAIL counts, and the two timestamp ranges (FAIL: FIRST→LAST, OK: FIRST→LAST).
+In snapshot mode, hosts that went down remain visible in red with their timestamps preserved.
 
 | Key | Action |
 |-----|--------|
 | `H` | Sort by hostname/name (press again to reverse) |
 | `I` | Sort by IP address (press again to reverse) |
 | `S` | Sort by status delta (snapshot) or OK count (scan) |
+| `T` | Cycle failure-time sort: Last Fail ↑ → ↓ → First Fail ↑ → ↓ |
 | `J` / `↓` | Move selection cursor down |
 | `K` / `↑` | Move selection cursor up |
 | `A` | Add highlighted host to the active hosts file |

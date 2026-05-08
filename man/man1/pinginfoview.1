@@ -1,4 +1,4 @@
-.TH PINGINFOVIEW 1 "2026-05-08" "deb repo v1.3" "User Commands"
+.TH PINGINFOVIEW 1 "2026-05-08" "deb repo v1.4" "User Commands"
 .SH NAME
 pinginfoview \- terminal host-ping monitor
 .SH SYNOPSIS
@@ -121,14 +121,23 @@ Quit and restore the terminal.
 .SS Scan mode
 Scan mode ignores the hosts file and pings every address in the local /24
 subnet, displaying only responding hosts.
+The column layout matches normal mode: HOST, IP, ST, OK\|/\|FAIL counts,
+FAIL: FIRST\(->LAST, and OK: FIRST\(->LAST.
+Timestamps are tracked per IP from the first ping and persist across refresh cycles.
+In snapshot mode, hosts that went down remain visible in red with their timestamps intact.
+.PP
 Sort keys work the same as in normal mode:
 .B H
 sorts by resolved hostname (falling back to IP),
 .B I
-sorts by IP address (default), and
+sorts by IP address (default),
 .B S
-sorts by status delta in snapshot mode, or by OK-ping count in plain scan mode.
-Pressing a sort key a second time reverses the direction.
+sorts by status delta in snapshot mode or by OK-ping count in plain scan mode, and
+.B T
+cycles through failure-time sorts: Last\-Fail ↑ → Last\-Fail ↓ → First\-Fail ↑ → First\-Fail ↓.
+Pressing a sort key a second time reverses the direction (except
+.B T
+which advances the cycle).
 Sort state is independent from normal-mode sort and resets to IP on each scan entry.
 The active subnet is auto\-detected from the machine's default-route interface.
 Reverse\-DNS names are resolved once per newly-discovered IP.

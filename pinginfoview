@@ -2,7 +2,7 @@
 # pinginfoview — terminal host-ping monitor
 # Usage: pinginfoview [hosts_file]
 
-VERSION="1.3"
+VERSION="1.4"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 HOSTS_FILE="${1:-${SCRIPT_DIR}/hosts.txt}"
 TMP_BASE="/tmp/pinginfoview_$$"
@@ -41,9 +41,14 @@ SCAN_OK=()
 SCAN_PIDS=()
 SCAN_DISPLAY_HOSTS=()   # ordered list built by draw_scan; read by add_host_to_file
 declare -A SCAN_UP=()   # ip → 1 for currently responding hosts
-SCAN_SORT_MODE="I"      # H=name  I=ip  S=status/ok-count
+SCAN_SORT_MODE="I"      # H=name  I=ip  S=status/ok-count  T=time
 SCAN_SORT_REV=0
+SCAN_T_CYCLE=0          # 0=last-fail↑  1=last-fail↓  2=first-fail↑  3=first-fail↓
 SCAN_SORT_BUF=()        # scratch buffer for get_sorted_scan_hosts
+
+# Per-IP associative maps (all known IPs, up and down — needed for snapshot timestamps)
+declare -A SC_OKC=() SC_FLC=()
+declare -A SC_FOK=() SC_LOK=() SC_FFL=() SC_LFL=()
 
 # ── snapshot mode state ────────────────────────────────────────────────────
 SNAPSHOT_MODE=0
@@ -246,6 +251,9 @@ scan_one_ip() {
     local d="$TMP_BASE/scan/$ip"
     mkdir -p "$d"
 
+    local now
+    now=$(date +%s)
+
     local ping_ok=1
     if [[ "$OS_TYPE" == "Darwin" ]]; then
         ping -c1 -t1 -q "$ip" &>/dev/null || ping_ok=0
@@ -258,6 +266,9 @@ scan_one_ip() {
         local n=0
         [[ -f "$d/ok" ]] && n=$(< "$d/ok")
         printf "%d\n" $((n + 1)) > "$d/ok"
+        local fo=""; [[ -f "$d/first_ok" ]] && fo=$(< "$d/first_ok")
+        [[ -z "$fo" ]] && printf "%d\n" "$now" > "$d/first_ok"
+        printf "%d\n" "$now" > "$d/last_ok"
         # Reverse DNS — attempt once per discovered IP
         if [[ ! -f "$d/name_done" ]]; then
             local name=""
@@ -276,6 +287,12 @@ scan_one_ip() {
         fi
     else
         printf "down\n" > "$d/status"
+        local n=0
+        [[ -f "$d/fail" ]] && n=$(< "$d/fail")
+        printf "%d\n" $((n + 1)) > "$d/fail"
+        local ff=""; [[ -f "$d/first_fail" ]] && ff=$(< "$d/first_fail")
+        [[ -z "$ff" ]] && printf "%d\n" "$now" > "$d/first_fail"
+        printf "%d\n" "$now" > "$d/last_fail"
     fi
 }
 
@@ -294,6 +311,8 @@ read_scan_state() {
     SCAN_NAMES=()
     SCAN_OK=()
     SCAN_UP=()
+    SC_OKC=(); SC_FLC=()
+    SC_FOK=(); SC_LOK=(); SC_FFL=(); SC_LFL=()
     local i
     for (( i=1; i<=254; i++ )); do
         local ip="${SCAN_SUBNET}.$i"
@@ -301,15 +320,26 @@ read_scan_state() {
         [[ ! -d "$d" ]] && continue
         local status=""
         [[ -f "$d/status" ]] && status=$(< "$d/status")
+
+        # Populate per-IP maps for all known IPs (up and down)
+        local okc=0 flc=0 fok="" lok="" ffl="" lfl=""
+        [[ -f "$d/ok" ]]         && okc=$(< "$d/ok")
+        [[ -f "$d/fail" ]]       && flc=$(< "$d/fail")
+        [[ -f "$d/first_ok" ]]   && fok=$(< "$d/first_ok")
+        [[ -f "$d/last_ok" ]]    && lok=$(< "$d/last_ok")
+        [[ -f "$d/first_fail" ]] && ffl=$(< "$d/first_fail")
+        [[ -f "$d/last_fail" ]]  && lfl=$(< "$d/last_fail")
+        SC_OKC["$ip"]="$okc"; SC_FLC["$ip"]="$flc"
+        SC_FOK["$ip"]="$fok"; SC_LOK["$ip"]="$lok"
+        SC_FFL["$ip"]="$ffl"; SC_LFL["$ip"]="$lfl"
+
         [[ "$status" != "up" ]] && continue
         SCAN_HOSTS+=("$ip")
         SCAN_UP["$ip"]=1
         local name=""
         [[ -f "$d/name" ]] && name=$(< "$d/name")
         SCAN_NAMES+=("$name")
-        local ok=0
-        [[ -f "$d/ok" ]] && ok=$(< "$d/ok")
-        SCAN_OK+=("$ok")
+        SCAN_OK+=("$okc")
     done
 }
 
@@ -324,6 +354,7 @@ enter_scan_mode() {
     SCAN_CURSOR=0
     SCAN_SORT_MODE="I"
     SCAN_SORT_REV=0
+    SCAN_T_CYCLE=0
     SNAPSHOT_MODE=0
     SNAP_STATUS=()
     FLASH_MSG=""
@@ -423,14 +454,14 @@ get_sorted_scan_hosts() {
                         key="2"   # unchanged → sort last
                     fi
                 else
-                    local dok=0 j
-                    for j in "${!SCAN_HOSTS[@]}"; do
-                        if [[ "${SCAN_HOSTS[$j]}" == "$ip" ]]; then
-                            dok="${SCAN_OK[$j]}"; break
-                        fi
-                    done
-                    key=$(printf "%010d" "$dok")
+                    key=$(printf "%010d" "${SC_OKC[$ip]:-0}")
                 fi
+                ;;
+            T)
+                case $SCAN_T_CYCLE in
+                    0|1) key=$(printf "%010d" "${SC_LFL[$ip]:-0}") ;;
+                    2|3) key=$(printf "%010d" "${SC_FFL[$ip]:-0}") ;;
+                esac
                 ;;
             *)  # I = numeric IP (default)
                 if [[ "$ip" =~ ^([0-9]+)\.([0-9]+)\.([0-9]+)\.([0-9]+)$ ]]; then
@@ -444,7 +475,10 @@ get_sorted_scan_hosts() {
         esac
         printf "%s\t%s\n" "$key" "$ip"
     done > "$tmp"
-    if (( SCAN_SORT_REV )); then
+    local do_rev=0
+    [[ "$SCAN_SORT_MODE" == "T" ]] && (( SCAN_T_CYCLE % 2 == 1 )) && do_rev=1
+    [[ "$SCAN_SORT_MODE" != "T" ]] && (( SCAN_SORT_REV ))          && do_rev=1
+    if (( do_rev )); then
         sort -rk1,1 "$tmp"
     else
         sort -k1,1 "$tmp"
@@ -457,7 +491,15 @@ scan_sort_label() {
     case "$SCAN_SORT_MODE" in
         H) printf "Name %s" "$arr" ;;
         S) (( SNAPSHOT_MODE )) && printf "Status %s" "$arr" || printf "OK# %s" "$arr" ;;
-        *) printf "IP %s"   "$arr" ;;
+        T)
+            case $SCAN_T_CYCLE in
+                0) printf "Last Fail ↑" ;;
+                1) printf "Last Fail ↓" ;;
+                2) printf "First Fail ↑" ;;
+                3) printf "First Fail ↓" ;;
+            esac
+            ;;
+        *) printf "IP %s" "$arr" ;;
     esac
 }
 
@@ -467,7 +509,7 @@ draw_scan() {
     cols=$(tput cols)
     rows=$(tput lines)
 
-    local W_HOST=24 W_IP=16 W_ST=3 W_CNT=6
+    local W_HOST=22 W_IP=16 W_ST=3 W_CNT=11 W_TIME=20
     local hline
     hline=$(printf '─%.0s' $(seq 1 "$cols"))
     local data_rows=$(( rows - 6 ))
@@ -493,8 +535,8 @@ draw_scan() {
     printf "\033[2K${CB}PingInfoView v%s${RS}  %s  Found: %d  Sort: %s%s\n" \
         "$VERSION" "$mode_label" "${#SCAN_HOSTS[@]}" "$(scan_sort_label)" "$flash_part"
     printf "\033[2K%s\n" "$hline"
-    printf "\033[2K${CB}%-${W_HOST}s %-${W_IP}s %-${W_ST}s %-${W_CNT}s${RS}\n" \
-        "HOST" "IP" "ST" "OK"
+    printf "\033[2K${CB}%-${W_HOST}s %-${W_IP}s %-${W_ST}s %-${W_CNT}s %-${W_TIME}s %-${W_TIME}s${RS}\n" \
+        "HOST" "IP" "ST" "OK / FAIL" "FAIL: FIRST → LAST" "OK: FIRST → LAST"
     printf "\033[2K%s\n" "$hline"
 
     # Build display list; in snapshot mode include hosts that went down
@@ -530,15 +572,24 @@ draw_scan() {
     for (( disp_idx=scroll; disp_idx<total && printed<data_rows; disp_idx++ )); do
         local ip="${dh[$disp_idx]}"
 
-        # Lookup display name and ok-count from scan arrays
-        local dname="$ip" dok=0 j
+        # Display name from scan arrays
+        local dname="$ip" j
         for j in "${!SCAN_HOSTS[@]}"; do
-            if [[ "${SCAN_HOSTS[$j]}" == "$ip" ]]; then
-                [[ -n "${SCAN_NAMES[$j]}" ]] && dname="${SCAN_NAMES[$j]}"
-                dok="${SCAN_OK[$j]}"
-                break
+            if [[ "${SCAN_HOSTS[$j]}" == "$ip" && -n "${SCAN_NAMES[$j]}" ]]; then
+                dname="${SCAN_NAMES[$j]}"; break
             fi
         done
+
+        # Counts and timestamps from per-IP maps
+        local okc="${SC_OKC[$ip]:-0}" flc="${SC_FLC[$ip]:-0}"
+        local ff lf fo lo
+        ff=$(fmt_time "${SC_FFL[$ip]:-}")
+        lf=$(fmt_time "${SC_LFL[$ip]:-}")
+        fo=$(fmt_time "${SC_FOK[$ip]:-}")
+        lo=$(fmt_time "${SC_LOK[$ip]:-}")
+        local fail_col ok_col
+        [[ "$ff" == "-" ]] && fail_col="-" || fail_col="${ff}→${lf}"
+        [[ "$fo" == "-" ]] && ok_col="-"   || ok_col="${fo}→${lo}"
 
         # Colour / symbol
         local sym color
@@ -557,11 +608,13 @@ draw_scan() {
         fi
 
         if (( disp_idx == SCAN_CURSOR )); then
-            printf "\033[2K\033[7m${color}%-${W_HOST}s %-${W_IP}s %-${W_ST}s %-${W_CNT}s${RS}\033[27m\n" \
-                "${dname:0:$W_HOST}" "${ip:0:$W_IP}" "$sym" "$dok"
+            printf "\033[2K\033[7m${color}%-${W_HOST}s${RS}\033[7m %-${W_IP}s ${color}%-${W_ST}s${RS}\033[7m %-${W_CNT}s %-${W_TIME}s %-${W_TIME}s${RS}\033[27m\n" \
+                "${dname:0:$W_HOST}" "${ip:0:$W_IP}" "$sym" \
+                "${okc}/${flc}" "${fail_col:0:$W_TIME}" "${ok_col:0:$W_TIME}"
         else
-            printf "\033[2K${color}%-${W_HOST}s${RS} %-${W_IP}s ${color}%-${W_ST}s${RS} %-${W_CNT}s\n" \
-                "${dname:0:$W_HOST}" "${ip:0:$W_IP}" "$sym" "$dok"
+            printf "\033[2K${color}%-${W_HOST}s${RS} %-${W_IP}s ${color}%-${W_ST}s${RS} %-${W_CNT}s %-${W_TIME}s %-${W_TIME}s\n" \
+                "${dname:0:$W_HOST}" "${ip:0:$W_IP}" "$sym" \
+                "${okc}/${flc}" "${fail_col:0:$W_TIME}" "${ok_col:0:$W_TIME}"
         fi
 
         (( printed++ ))
@@ -572,7 +625,7 @@ draw_scan() {
     done
 
     printf "\033[2K%s\n" "$hline"
-    printf "\033[2K${CD}[H/I/S]=sort  [N]=exit scan  [A]=add  [P]=snapshot  [J/K/↑↓]=select  [Q]=quit${RS}"
+    printf "\033[2K${CD}[H/I/S/T]=sort  [N]=exit scan  [A]=add  [P]=snapshot  [J/K/↑↓]=select  [Q]=quit${RS}"
 }
 
 # ── time formatting ────────────────────────────────────────────────────────
@@ -786,6 +839,14 @@ handle_key() {
                     SCAN_SORT_REV=$(( 1 - SCAN_SORT_REV ))
                 else
                     SCAN_SORT_MODE="$m"; SCAN_SORT_REV=0
+                fi
+                SCAN_CURSOR=0
+                ;;
+            T)
+                if [[ "$SCAN_SORT_MODE" == "T" ]]; then
+                    SCAN_T_CYCLE=$(( (SCAN_T_CYCLE + 1) % 4 ))
+                else
+                    SCAN_SORT_MODE="T"; SCAN_T_CYCLE=0
                 fi
                 SCAN_CURSOR=0
                 ;;
