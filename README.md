@@ -149,6 +149,9 @@ Reverse-DNS names are resolved once per discovered IP.
 
 | Key | Action |
 |-----|--------|
+| `H` | Sort by hostname/name (press again to reverse) |
+| `I` | Sort by IP address (press again to reverse) |
+| `S` | Sort by status delta (snapshot) or OK count (scan) |
 | `J` / `↓` | Move selection cursor down |
 | `K` / `↑` | Move selection cursor up |
 | `A` | Add highlighted host to the active hosts file |

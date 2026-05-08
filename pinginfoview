@@ -2,7 +2,7 @@
 # pinginfoview — terminal host-ping monitor
 # Usage: pinginfoview [hosts_file]
 
-VERSION="1.2"
+VERSION="1.3"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 HOSTS_FILE="${1:-${SCRIPT_DIR}/hosts.txt}"
 TMP_BASE="/tmp/pinginfoview_$$"
@@ -41,6 +41,9 @@ SCAN_OK=()
 SCAN_PIDS=()
 SCAN_DISPLAY_HOSTS=()   # ordered list built by draw_scan; read by add_host_to_file
 declare -A SCAN_UP=()   # ip → 1 for currently responding hosts
+SCAN_SORT_MODE="I"      # H=name  I=ip  S=status/ok-count
+SCAN_SORT_REV=0
+SCAN_SORT_BUF=()        # scratch buffer for get_sorted_scan_hosts
 
 # ── snapshot mode state ────────────────────────────────────────────────────
 SNAPSHOT_MODE=0
@@ -319,6 +322,8 @@ enter_scan_mode() {
     fi
     SCAN_MODE=1
     SCAN_CURSOR=0
+    SCAN_SORT_MODE="I"
+    SCAN_SORT_REV=0
     SNAPSHOT_MODE=0
     SNAP_STATUS=()
     FLASH_MSG=""
@@ -390,6 +395,72 @@ add_host_to_file() {
     FLASH_UNTIL=$(( $(date +%s) + 3 ))
 }
 
+# ── scan mode: sort helpers ───────────────────────────────────────────────
+get_sorted_scan_hosts() {
+    local tmp; tmp=$(mktemp)
+    local ip
+    for ip in "${SCAN_SORT_BUF[@]}"; do
+        local key
+        case "$SCAN_SORT_MODE" in
+            H)
+                local dname="$ip" j
+                for j in "${!SCAN_HOSTS[@]}"; do
+                    if [[ "${SCAN_HOSTS[$j]}" == "$ip" && -n "${SCAN_NAMES[$j]}" ]]; then
+                        dname="${SCAN_NAMES[$j]}"; break
+                    fi
+                done
+                key="$dname"
+                ;;
+            S)
+                if (( SNAPSHOT_MODE )); then
+                    local snap_st="${SNAP_STATUS[$ip]:-absent}"
+                    local cur_up="${SCAN_UP[$ip]:-0}"
+                    if (( cur_up )) && [[ "$snap_st" != "up" ]]; then
+                        key="0"   # newly appeared → sort first
+                    elif (( ! cur_up )) && [[ "$snap_st" == "up" ]]; then
+                        key="1"   # went down → sort second
+                    else
+                        key="2"   # unchanged → sort last
+                    fi
+                else
+                    local dok=0 j
+                    for j in "${!SCAN_HOSTS[@]}"; do
+                        if [[ "${SCAN_HOSTS[$j]}" == "$ip" ]]; then
+                            dok="${SCAN_OK[$j]}"; break
+                        fi
+                    done
+                    key=$(printf "%010d" "$dok")
+                fi
+                ;;
+            *)  # I = numeric IP (default)
+                if [[ "$ip" =~ ^([0-9]+)\.([0-9]+)\.([0-9]+)\.([0-9]+)$ ]]; then
+                    key=$(printf "%03d%03d%03d%03d" \
+                        "${BASH_REMATCH[1]}" "${BASH_REMATCH[2]}" \
+                        "${BASH_REMATCH[3]}" "${BASH_REMATCH[4]}")
+                else
+                    key="$ip"
+                fi
+                ;;
+        esac
+        printf "%s\t%s\n" "$key" "$ip"
+    done > "$tmp"
+    if (( SCAN_SORT_REV )); then
+        sort -rk1,1 "$tmp"
+    else
+        sort -k1,1 "$tmp"
+    fi | awk -F'\t' '{print $2}'
+    rm -f "$tmp"
+}
+
+scan_sort_label() {
+    local arr; (( SCAN_SORT_REV )) && arr="↓" || arr="↑"
+    case "$SCAN_SORT_MODE" in
+        H) printf "Name %s" "$arr" ;;
+        S) (( SNAPSHOT_MODE )) && printf "Status %s" "$arr" || printf "OK# %s" "$arr" ;;
+        *) printf "IP %s"   "$arr" ;;
+    esac
+}
+
 # ── draw scan mode ─────────────────────────────────────────────────────────
 draw_scan() {
     local cols rows
@@ -419,8 +490,8 @@ draw_scan() {
         FLASH_MSG=""
     fi
 
-    printf "\033[2K${CB}PingInfoView v%s${RS}  %s  Found: %d%s\n" \
-        "$VERSION" "$mode_label" "${#SCAN_HOSTS[@]}" "$flash_part"
+    printf "\033[2K${CB}PingInfoView v%s${RS}  %s  Found: %d  Sort: %s%s\n" \
+        "$VERSION" "$mode_label" "${#SCAN_HOSTS[@]}" "$(scan_sort_label)" "$flash_part"
     printf "\033[2K%s\n" "$hline"
     printf "\033[2K${CB}%-${W_HOST}s %-${W_IP}s %-${W_ST}s %-${W_CNT}s${RS}\n" \
         "HOST" "IP" "ST" "OK"
@@ -438,6 +509,10 @@ draw_scan() {
     else
         dh=("${SCAN_HOSTS[@]}")
     fi
+
+    # Apply sort
+    SCAN_SORT_BUF=("${dh[@]}")
+    mapfile -t dh < <(get_sorted_scan_hosts)
 
     SCAN_DISPLAY_HOSTS=("${dh[@]}")
 
@@ -497,7 +572,7 @@ draw_scan() {
     done
 
     printf "\033[2K%s\n" "$hline"
-    printf "\033[2K${CD}[N]=exit scan  [A]=add to hosts  [P]=snapshot  [J/K/↑↓]=select  [Q]=quit${RS}"
+    printf "\033[2K${CD}[H/I/S]=sort  [N]=exit scan  [A]=add  [P]=snapshot  [J/K/↑↓]=select  [Q]=quit${RS}"
 }
 
 # ── time formatting ────────────────────────────────────────────────────────
@@ -705,6 +780,15 @@ handle_key() {
             return
         fi
         case "${key^^}" in
+            H|I|S)
+                local m="${key^^}"
+                if [[ "$SCAN_SORT_MODE" == "$m" ]]; then
+                    SCAN_SORT_REV=$(( 1 - SCAN_SORT_REV ))
+                else
+                    SCAN_SORT_MODE="$m"; SCAN_SORT_REV=0
+                fi
+                SCAN_CURSOR=0
+                ;;
             N) exit_scan_mode ;;
             A) add_host_to_file ;;
             P)
