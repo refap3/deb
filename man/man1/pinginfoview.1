@@ -1,4 +1,4 @@
-.TH PINGINFOVIEW 1 "2026-05-08" "deb repo v1.6" "User Commands"
+.TH PINGINFOVIEW 1 "2026-05-08" "deb repo v1.7" "User Commands"
 .SH NAME
 pinginfoview \- terminal host-ping monitor
 .SH SYNOPSIS
@@ -169,7 +169,8 @@ while background hosts are suppressed; pressing
 again restores them.
 .PP
 Confirmed dropouts — hosts that were up at snapshot time and have since stopped
-responding — are tracked persistently and remain visible in red even when background
+responding, as well as new arrivals that appeared after the snapshot and subsequently
+went down — are tracked persistently and remain visible in red even when background
 is hidden.
 Pressing
 .B B

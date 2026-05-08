@@ -178,7 +178,8 @@ Press `B` to toggle visibility of unchanged (dim) background hosts — useful to
 new arrivals and dropouts. The status bar shows `bg:hidden` when they are suppressed.
 Confirmed dropouts (hosts that went red since the snapshot) remain visible in red even
 when background is hidden, and stay red until `B` is pressed again (resetting their
-dropout state) or `P` clears the snapshot.
+dropout state) or `P` clears the snapshot. This covers both baseline hosts that went
+down and new arrivals that appeared after the snapshot and then disappeared.
 
 **Site auto-detection** (when launched via `piv` alias): each site's nameserver is queried directly —
 `192.168.1.203` for `ssb8.local` → `hosts-vienna.txt`, `192.168.1.198` for `pi.hole` → `hosts-aigen.txt`, neither → `hosts.txt`.
