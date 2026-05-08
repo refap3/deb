@@ -2,7 +2,7 @@
 # pinginfoview — terminal host-ping monitor
 # Usage: pinginfoview [hosts_file]
 
-VERSION="1.5"
+VERSION="1.6"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 HOSTS_FILE="${1:-${SCRIPT_DIR}/hosts.txt}"
 TMP_BASE="/tmp/pinginfoview_$$"
@@ -55,6 +55,7 @@ SNAPSHOT_MODE=0
 SNAPSHOT_TIME=""
 SNAP_HIDE_BG=0              # 1 = hide unchanged (dim) hosts in snapshot view
 declare -A SNAP_STATUS=()   # ip → "up" recorded at snapshot time
+declare -A SNAP_DROP=()     # ip → 1 once confirmed dropped; stays red until B
 
 # ── flash message (shown in status bar for a few seconds) ─────────────────
 FLASH_MSG=""
@@ -359,6 +360,7 @@ enter_scan_mode() {
     SNAPSHOT_MODE=0
     SNAP_HIDE_BG=0
     SNAP_STATUS=()
+    SNAP_DROP=()
     FLASH_MSG=""
     mkdir -p "$TMP_BASE/scan"
     trigger_scan
@@ -376,6 +378,7 @@ exit_scan_mode() {
     SNAP_HIDE_BG=0
     SCAN_CURSOR=0
     SNAP_STATUS=()
+    SNAP_DROP=()
     SCAN_HOSTS=(); SCAN_NAMES=(); SCAN_OK=()
     SCAN_UP=(); SCAN_DISPLAY_HOSTS=()
     # Reinitialise normal mode (hosts file may have changed via A)
@@ -390,6 +393,7 @@ take_snapshot() {
     SNAPSHOT_TIME=$(date +%H:%M:%S)
     SNAP_HIDE_BG=0
     SNAP_STATUS=()
+    SNAP_DROP=()
     local ip
     for ip in "${SCAN_HOSTS[@]}"; do
         SNAP_STATUS["$ip"]="up"
@@ -548,8 +552,15 @@ draw_scan() {
     # Build display list; in snapshot mode include hosts that went down
     local -a dh=()
     if (( SNAPSHOT_MODE )); then
-        local -A seen=()
+        # Promote newly-detected dropouts into SNAP_DROP before filtering
         local ip
+        for ip in "${!SNAP_STATUS[@]}"; do
+            if [[ "${SNAP_STATUS[$ip]}" == "up" ]] && [[ "${SCAN_UP[$ip]:-0}" == "0" ]]; then
+                SNAP_DROP["$ip"]=1
+            fi
+        done
+
+        local -A seen=()
         for ip in "${SCAN_HOSTS[@]}";    do seen["$ip"]=1; done
         for ip in "${!SNAP_STATUS[@]}";  do seen["$ip"]=1; done
         local -a all_snap=()
@@ -558,8 +569,10 @@ draw_scan() {
         for ip in "${all_snap[@]}"; do
             local snap_st="${SNAP_STATUS[$ip]:-absent}"
             local cur_up="${SCAN_UP[$ip]:-0}"
-            if (( SNAP_HIDE_BG )) && (( cur_up )) && [[ "$snap_st" == "up" ]]; then
-                continue   # skip unchanged hosts
+            local dropped="${SNAP_DROP[$ip]:-0}"
+            # Hide background (unchanged, not a confirmed dropout) when toggled
+            if (( SNAP_HIDE_BG )) && (( ! dropped )) && (( cur_up )) && [[ "$snap_st" == "up" ]]; then
+                continue
             fi
             dh+=("$ip")
         done
@@ -611,10 +624,11 @@ draw_scan() {
         if (( SNAPSHOT_MODE )); then
             local snap_st="${SNAP_STATUS[$ip]:-absent}"
             local cur_up="${SCAN_UP[$ip]:-0}"
-            if (( cur_up )) && [[ "$snap_st" != "up" ]]; then
+            local dropped="${SNAP_DROP[$ip]:-0}"
+            if (( dropped )); then
+                sym="$FAIL_SYM"; color="$CRR"   # confirmed dropout → persistent red
+            elif (( cur_up )) && [[ "$snap_st" != "up" ]]; then
                 sym="$OK_SYM";   color="$CGG"   # newly appeared → bright green
-            elif (( ! cur_up )) && [[ "$snap_st" == "up" ]]; then
-                sym="$FAIL_SYM"; color="$CRR"   # went down → bright red
             else
                 sym="$OK_SYM";   color="$CD"    # no change → dim
             fi
@@ -871,7 +885,7 @@ handle_key() {
             A) add_host_to_file ;;
             P)
                 if (( SNAPSHOT_MODE )); then
-                    SNAPSHOT_MODE=0; SNAP_HIDE_BG=0; SNAP_STATUS=()
+                    SNAPSHOT_MODE=0; SNAP_HIDE_BG=0; SNAP_STATUS=(); SNAP_DROP=()
                 else
                     take_snapshot
                 fi
@@ -879,6 +893,7 @@ handle_key() {
             B)
                 if (( SNAPSHOT_MODE )); then
                     SNAP_HIDE_BG=$(( 1 - SNAP_HIDE_BG ))
+                    SNAP_DROP=()
                     SCAN_CURSOR=0
                 fi
                 ;;

@@ -1,4 +1,4 @@
-.TH PINGINFOVIEW 1 "2026-05-08" "deb repo v1.5" "User Commands"
+.TH PINGINFOVIEW 1 "2026-05-08" "deb repo v1.6" "User Commands"
 .SH NAME
 pinginfoview \- terminal host-ping monitor
 .SH SYNOPSIS
@@ -160,13 +160,21 @@ Toggle snapshot mode (see below).
 .B B
 Toggle visibility of unchanged (dim) background hosts.
 Only active while in snapshot mode.
-When hidden, only new arrivals (bright green) and dropouts (bright red) are
+When hidden, only new arrivals (bright green) and confirmed dropouts (bright red) are
 shown, making it easier to focus on changes.
 The status bar shows
 .B bg:hidden
 while background hosts are suppressed; pressing
 .B B
 again restores them.
+.PP
+Confirmed dropouts — hosts that were up at snapshot time and have since stopped
+responding — are tracked persistently and remain visible in red even when background
+is hidden.
+Pressing
+.B B
+also resets all dropout markers, so hosts that came back up revert to dim on the
+next draw cycle.
 .TP
 .B N
 Exit scan mode and return to normal hosts\-file monitoring.
@@ -202,7 +210,12 @@ again to clear the snapshot and resume the normal scan view.
 Press
 .B B
 to toggle visibility of unchanged (dim) background hosts.
-When background hosts are hidden, only new arrivals and dropouts remain visible.
+When background hosts are hidden, only new arrivals and confirmed dropouts remain visible.
+Confirmed dropouts stay red until
+.B B
+is pressed again (which resets dropout markers) or
+.B P
+clears the snapshot entirely.
 The status bar appends
 .B bg:hidden
 as a reminder.
