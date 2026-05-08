@@ -159,6 +159,7 @@ In snapshot mode, hosts that went down remain visible in red with their timestam
 | `K` / `↑` | Move selection cursor up |
 | `A` | Add highlighted host to the active hosts file |
 | `P` | Toggle **snapshot mode** |
+| `B` | Toggle visibility of unchanged (dim) background hosts *(snapshot mode only)* |
 | `N` | Exit scan mode, return to hosts-file view |
 | `Q` | Quit |
 
@@ -173,6 +174,8 @@ changes as they happen:
 
 Press `P` again to clear the snapshot and resume the normal scan view.
 The status bar shows `[SNAPSHOT HH:MM:SS]` with the time the baseline was taken.
+Press `B` to toggle visibility of unchanged (dim) background hosts — useful to focus on
+new arrivals and dropouts. The status bar shows `bg:hidden` when they are suppressed.
 
 **Site auto-detection** (when launched via `piv` alias): each site's nameserver is queried directly —
 `192.168.1.203` for `ssb8.local` → `hosts-vienna.txt`, `192.168.1.198` for `pi.hole` → `hosts-aigen.txt`, neither → `hosts.txt`.

@@ -2,7 +2,7 @@
 # pinginfoview — terminal host-ping monitor
 # Usage: pinginfoview [hosts_file]
 
-VERSION="1.4"
+VERSION="1.5"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 HOSTS_FILE="${1:-${SCRIPT_DIR}/hosts.txt}"
 TMP_BASE="/tmp/pinginfoview_$$"
@@ -53,6 +53,7 @@ declare -A SC_FOK=() SC_LOK=() SC_FFL=() SC_LFL=()
 # ── snapshot mode state ────────────────────────────────────────────────────
 SNAPSHOT_MODE=0
 SNAPSHOT_TIME=""
+SNAP_HIDE_BG=0              # 1 = hide unchanged (dim) hosts in snapshot view
 declare -A SNAP_STATUS=()   # ip → "up" recorded at snapshot time
 
 # ── flash message (shown in status bar for a few seconds) ─────────────────
@@ -356,6 +357,7 @@ enter_scan_mode() {
     SCAN_SORT_REV=0
     SCAN_T_CYCLE=0
     SNAPSHOT_MODE=0
+    SNAP_HIDE_BG=0
     SNAP_STATUS=()
     FLASH_MSG=""
     mkdir -p "$TMP_BASE/scan"
@@ -371,6 +373,7 @@ exit_scan_mode() {
     rm -rf "$TMP_BASE/scan"
     SCAN_MODE=0
     SNAPSHOT_MODE=0
+    SNAP_HIDE_BG=0
     SCAN_CURSOR=0
     SNAP_STATUS=()
     SCAN_HOSTS=(); SCAN_NAMES=(); SCAN_OK=()
@@ -385,6 +388,7 @@ exit_scan_mode() {
 take_snapshot() {
     SNAPSHOT_MODE=1
     SNAPSHOT_TIME=$(date +%H:%M:%S)
+    SNAP_HIDE_BG=0
     SNAP_STATUS=()
     local ip
     for ip in "${SCAN_HOSTS[@]}"; do
@@ -520,7 +524,9 @@ draw_scan() {
     # Status bar
     local mode_label
     if (( SNAPSHOT_MODE )); then
-        mode_label="${CB}[SNAPSHOT ${SNAPSHOT_TIME}]${RS}"
+        local bg_ind=""
+        (( SNAP_HIDE_BG )) && bg_ind=" ${CD}bg:hidden${RS}"
+        mode_label="${CB}[SNAPSHOT ${SNAPSHOT_TIME}]${RS}${bg_ind}"
     else
         mode_label="${CB}[SCAN ${SCAN_SUBNET_DISPLAY}]${RS}"
     fi
@@ -546,8 +552,17 @@ draw_scan() {
         local ip
         for ip in "${SCAN_HOSTS[@]}";    do seen["$ip"]=1; done
         for ip in "${!SNAP_STATUS[@]}";  do seen["$ip"]=1; done
-        mapfile -t dh < <(printf '%s\n' "${!seen[@]}" \
+        local -a all_snap=()
+        mapfile -t all_snap < <(printf '%s\n' "${!seen[@]}" \
             | sort -t. -k1,1n -k2,2n -k3,3n -k4,4n)
+        for ip in "${all_snap[@]}"; do
+            local snap_st="${SNAP_STATUS[$ip]:-absent}"
+            local cur_up="${SCAN_UP[$ip]:-0}"
+            if (( SNAP_HIDE_BG )) && (( cur_up )) && [[ "$snap_st" == "up" ]]; then
+                continue   # skip unchanged hosts
+            fi
+            dh+=("$ip")
+        done
     else
         dh=("${SCAN_HOSTS[@]}")
     fi
@@ -625,7 +640,9 @@ draw_scan() {
     done
 
     printf "\033[2K%s\n" "$hline"
-    printf "\033[2K${CD}[H/I/S/T]=sort  [N]=exit scan  [A]=add  [P]=snapshot  [J/K/↑↓]=select  [Q]=quit${RS}"
+    local b_hint=""
+    (( SNAPSHOT_MODE )) && b_hint="  [B]=toggle bg"
+    printf "\033[2K${CD}[H/I/S/T]=sort  [N]=exit scan  [A]=add  [P]=snapshot%s  [J/K/↑↓]=select  [Q]=quit${RS}" "$b_hint"
 }
 
 # ── time formatting ────────────────────────────────────────────────────────
@@ -854,9 +871,15 @@ handle_key() {
             A) add_host_to_file ;;
             P)
                 if (( SNAPSHOT_MODE )); then
-                    SNAPSHOT_MODE=0; SNAP_STATUS=()
+                    SNAPSHOT_MODE=0; SNAP_HIDE_BG=0; SNAP_STATUS=()
                 else
                     take_snapshot
+                fi
+                ;;
+            B)
+                if (( SNAPSHOT_MODE )); then
+                    SNAP_HIDE_BG=$(( 1 - SNAP_HIDE_BG ))
+                    SCAN_CURSOR=0
                 fi
                 ;;
             Q) cleanup ;;

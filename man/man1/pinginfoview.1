@@ -1,4 +1,4 @@
-.TH PINGINFOVIEW 1 "2026-05-08" "deb repo v1.4" "User Commands"
+.TH PINGINFOVIEW 1 "2026-05-08" "deb repo v1.5" "User Commands"
 .SH NAME
 pinginfoview \- terminal host-ping monitor
 .SH SYNOPSIS
@@ -157,6 +157,17 @@ A flash message in the status bar confirms each addition.
 .B P
 Toggle snapshot mode (see below).
 .TP
+.B B
+Toggle visibility of unchanged (dim) background hosts.
+Only active while in snapshot mode.
+When hidden, only new arrivals (bright green) and dropouts (bright red) are
+shown, making it easier to focus on changes.
+The status bar shows
+.B bg:hidden
+while background hosts are suppressed; pressing
+.B B
+again restores them.
+.TP
 .B N
 Exit scan mode and return to normal hosts\-file monitoring.
 .TP
@@ -187,6 +198,14 @@ with the time the baseline was recorded.
 Press
 .B P
 again to clear the snapshot and resume the normal scan view.
+.PP
+Press
+.B B
+to toggle visibility of unchanged (dim) background hosts.
+When background hosts are hidden, only new arrivals and dropouts remain visible.
+The status bar appends
+.B bg:hidden
+as a reminder.
 .SH SITE DETECTION
 When launched via the
 .B piv
