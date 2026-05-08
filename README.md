@@ -135,6 +135,9 @@ google.com
 | `T` | Cycle failure-time sort: Last Fail ↑ → ↓ → First Fail ↑ → ↓ |
 | `R` | Set refresh interval (default: 2 s) |
 | `E` | Edit `hosts.txt` in nano; reloads on save |
+| `J` / `↓` | Move selection cursor down |
+| `K` / `↑` | Move selection cursor up |
+| `D` | Remove highlighted host from the hosts file |
 | `N` | Enter **scan mode** (discover live hosts on the current /24 subnet) |
 | `Q` / `ESC` | Quit |
 

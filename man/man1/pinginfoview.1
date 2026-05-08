@@ -1,4 +1,4 @@
-.TH PINGINFOVIEW 1 "2026-05-08" "deb repo v1.1" "User Commands"
+.TH PINGINFOVIEW 1 "2026-05-08" "deb repo v1.2" "User Commands"
 .SH NAME
 pinginfoview \- terminal host-ping monitor
 .SH SYNOPSIS
@@ -74,6 +74,18 @@ Displays
 when no success has occurred.
 .SH KEYS
 .SS Normal mode
+.TP
+.B J / Down-arrow
+Move the selection cursor down one row.
+.TP
+.B K / Up-arrow
+Move the selection cursor up one row.
+.TP
+.B D
+Remove the highlighted host from the hosts file.
+The last remaining host cannot be removed.
+A confirmation flash message is shown in the status bar.
+Sorting is reset to the first row when the sort column changes.
 .TP
 .B H
 Sort by hostname (default). Press again to reverse direction.

@@ -2,7 +2,7 @@
 # pinginfoview — terminal host-ping monitor
 # Usage: pinginfoview [hosts_file]
 
-VERSION="1.1"
+VERSION="1.2"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 HOSTS_FILE="${1:-${SCRIPT_DIR}/hosts.txt}"
 TMP_BASE="/tmp/pinginfoview_$$"
@@ -25,6 +25,7 @@ PING_PIDS=()    # PIDs of current ping round — killed on exit
 SORT_MODE="H"   # H=hostname  I=ip  S=status  T=time
 SORT_REV=0      # 0=ascending  1=descending  (H/I/S; T uses T_CYCLE parity)
 T_CYCLE=0       # 0=last-fail↑  1=last-fail↓  2=first-fail↑  3=first-fail↓
+NORM_CURSOR=0   # selected row index in normal mode
 
 declare -a st_status st_ip st_ok st_fail \
            st_first_ok st_last_ok st_first_fail st_last_fail
@@ -183,6 +184,40 @@ read_state() {
         st_first_fail[$i]=$(< "$d/first_fail")
         st_last_fail[$i]=$( < "$d/last_fail" )
     done
+}
+
+# ── normal mode: remove highlighted host from hosts file ──────────────────
+remove_host_from_file() {
+    local total="${#hosts[@]}"
+    if (( total <= 1 )); then
+        FLASH_MSG="Cannot remove last host"
+        FLASH_UNTIL=$(( $(date +%s) + 2 ))
+        return
+    fi
+    (( NORM_CURSOR >= total )) && return
+
+    local sorted_indices=()
+    mapfile -t sorted_indices < <(get_sorted_indices)
+    local host="${hosts[${sorted_indices[$NORM_CURSOR]}]}"
+
+    local tmp
+    tmp=$(mktemp)
+    awk -v host="$host" '
+    {
+        stripped = $0
+        sub(/#.*/, "", stripped)
+        gsub(/^[[:space:]]+|[[:space:]]+$/, "", stripped)
+        if (stripped == host) next
+        print
+    }' "$HOSTS_FILE" > "$tmp" && mv "$tmp" "$HOSTS_FILE"
+
+    FLASH_MSG="Removed ${host} from $(basename "$HOSTS_FILE")"
+    FLASH_UNTIL=$(( $(date +%s) + 3 ))
+
+    (( NORM_CURSOR > 0 && NORM_CURSOR >= total - 1 )) && (( NORM_CURSOR-- ))
+    load_hosts
+    init_state
+    trigger_pings
 }
 
 # ── scan mode: subnet detection ────────────────────────────────────────────
@@ -554,19 +589,37 @@ draw() {
 
     local site_part=""
     [[ -n "$SITE_LABEL" ]] && site_part="  ${CB}[${SITE_LABEL}]${RS}"
-    printf "\033[2K${CB}PingInfoView v%s${RS}%s  Hosts: %d  Refresh: %ds  Sort: %s\n" \
-        "$VERSION" "$site_part" "${#hosts[@]}" "$REFRESH" "$(sort_label)"
+
+    local flash_part=""
+    if [[ -n "$FLASH_MSG" ]] && (( $(date +%s) < FLASH_UNTIL )); then
+        flash_part="  ${CG}${FLASH_MSG}${RS}"
+    else
+        FLASH_MSG=""
+    fi
+
+    printf "\033[2K${CB}PingInfoView v%s${RS}%s  Hosts: %d  Refresh: %ds  Sort: %s%s\n" \
+        "$VERSION" "$site_part" "${#hosts[@]}" "$REFRESH" "$(sort_label)" "$flash_part"
     printf "\033[2K%s\n" "$hline"
     printf "\033[2K${CB}%-${W_HOST}s %-${W_IP}s %-${W_ST}s %-${W_CNT}s %-${W_TIME}s %-${W_TIME}s${RS}\n" \
         "HOST" "IP" "ST" "OK / FAIL" "FAIL: FIRST → LAST" "OK: FIRST → LAST"
     printf "\033[2K%s\n" "$hline"
 
+    # Clamp cursor to current host count
+    local total="${#hosts[@]}"
+    (( total > 0 && NORM_CURSOR >= total )) && NORM_CURSOR=$(( total - 1 ))
+    (( NORM_CURSOR < 0 )) && NORM_CURSOR=0
+
     local sorted_indices=()
     mapfile -t sorted_indices < <(get_sorted_indices)
 
-    local printed=0
-    for i in "${sorted_indices[@]}"; do
-        (( printed >= data_rows )) && break
+    # Scroll so cursor is always visible
+    local scroll=0
+    (( total > data_rows && NORM_CURSOR >= data_rows )) && \
+        scroll=$(( NORM_CURSOR - data_rows + 1 ))
+
+    local printed=0 si
+    for (( si=scroll; si<${#sorted_indices[@]} && printed<data_rows; si++ )); do
+        local i="${sorted_indices[$si]}"
 
         local host="${hosts[$i]}"
         local ip="${st_ip[$i]:-}"
@@ -591,10 +644,17 @@ draw() {
             *)    sym="?";          color="$CD" ;;
         esac
 
-        printf "\033[2K${color}%-${W_HOST}s${RS} %-${W_IP}s ${color}%-${W_ST}s${RS} %-${W_CNT}s %-${W_TIME}s %-${W_TIME}s\n" \
-            "${host:0:$W_HOST}" "${ip:0:$W_IP}" "$sym" \
-            "${ok}/${fail}" \
-            "${fail_col:0:$W_TIME}" "${ok_col:0:$W_TIME}"
+        if (( si == NORM_CURSOR )); then
+            printf "\033[2K\033[7m${color}%-${W_HOST}s${RS}\033[7m %-${W_IP}s ${color}%-${W_ST}s${RS}\033[7m %-${W_CNT}s %-${W_TIME}s %-${W_TIME}s${RS}\033[27m\n" \
+                "${host:0:$W_HOST}" "${ip:0:$W_IP}" "$sym" \
+                "${ok}/${fail}" \
+                "${fail_col:0:$W_TIME}" "${ok_col:0:$W_TIME}"
+        else
+            printf "\033[2K${color}%-${W_HOST}s${RS} %-${W_IP}s ${color}%-${W_ST}s${RS} %-${W_CNT}s %-${W_TIME}s %-${W_TIME}s\n" \
+                "${host:0:$W_HOST}" "${ip:0:$W_IP}" "$sym" \
+                "${ok}/${fail}" \
+                "${fail_col:0:$W_TIME}" "${ok_col:0:$W_TIME}"
+        fi
 
         (( printed++ ))
     done
@@ -604,7 +664,7 @@ draw() {
     done
 
     printf "\033[2K%s\n" "$hline"
-    printf "\033[2K${CD}[H]ost  [I]P  [S]tatus  [T]ime  [R]efresh  [E]dit hosts.txt  [N]=scan  [Q/ESC] Quit${RS}"
+    printf "\033[2K${CD}[H]ost  [I]P  [S]tatus  [T]ime  [R]efresh  [E]dit  [D]=remove  [J/K/↑↓]=select  [N]=scan  [Q/ESC] Quit${RS}"
 }
 
 # ── key handlers ───────────────────────────────────────────────────────────
@@ -659,6 +719,16 @@ handle_key() {
         return
     fi
 
+    local total="${#hosts[@]}"
+    # Arrow keys (escape sequences) and vim-style J/K for normal mode
+    if [[ "$seq" == "[A" ]] || [[ "${key^^}" == "K" ]]; then
+        (( NORM_CURSOR > 0 )) && (( NORM_CURSOR-- ))
+        return
+    elif [[ "$seq" == "[B" ]] || [[ "${key^^}" == "J" ]]; then
+        (( total > 0 && NORM_CURSOR < total - 1 )) && (( NORM_CURSOR++ ))
+        return
+    fi
+
     case "${key^^}" in
         H|I|S)
             local m="${key^^}"
@@ -667,6 +737,7 @@ handle_key() {
             else
                 SORT_MODE="$m"; SORT_REV=0
             fi
+            NORM_CURSOR=0
             ;;
         T)
             if [[ "$SORT_MODE" == "T" ]]; then
@@ -674,7 +745,9 @@ handle_key() {
             else
                 SORT_MODE="T"; T_CYCLE=0
             fi
+            NORM_CURSOR=0
             ;;
+        D) remove_host_from_file ;;
         N) enter_scan_mode ;;
         R) prompt_refresh ;;
         E) edit_hosts ;;
