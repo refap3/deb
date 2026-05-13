@@ -2,7 +2,7 @@
 # pinginfoview — terminal host-ping monitor
 # Usage: pinginfoview [hosts_file]
 
-VERSION="1.9"
+VERSION="1.10"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 HOSTS_FILE="${1:-${SCRIPT_DIR}/hosts.txt}"
 TMP_BASE="/tmp/pinginfoview_$$"
@@ -878,6 +878,41 @@ edit_hosts() {
     clear
 }
 
+dig_host() {
+    local target
+    if (( SCAN_MODE )); then
+        local total="${#SCAN_DISPLAY_HOSTS[@]}"
+        (( total == 0 || SCAN_CURSOR >= total )) && return
+        local ip="${SCAN_DISPLAY_HOSTS[$SCAN_CURSOR]}"
+        # prefer resolved name if available
+        local name="" j
+        for j in "${!SCAN_HOSTS[@]}"; do
+            [[ "${SCAN_HOSTS[$j]}" == "$ip" ]] && name="${SCAN_NAMES[$j]}" && break
+        done
+        target="${name:-$ip}"
+    else
+        local total="${#hosts[@]}"
+        (( total == 0 || NORM_CURSOR >= total )) && return
+        local sorted_indices=()
+        mapfile -t sorted_indices < <(get_sorted_indices)
+        target="${hosts[${sorted_indices[$NORM_CURSOR]}]}"
+    fi
+
+    if ! command -v dig &>/dev/null; then
+        apt-get install -y dnsutils &>/dev/null
+    fi
+
+    tput rmcup
+    tput cnorm
+    printf "\033[1mdig %s\033[0m\n\n" "$target"
+    dig "$target" 2>&1
+    printf "\n\033[2mPress any key to return…\033[0m"
+    read -rsn1
+    tput smcup
+    tput civis
+    clear
+}
+
 handle_key() {
     local key="$1" seq="${2:-}"
 
@@ -909,6 +944,7 @@ handle_key() {
                 fi
                 SCAN_CURSOR=0
                 ;;
+            D) dig_host ;;
             N) exit_scan_mode ;;
             A) add_host_to_file ;;
             P)
@@ -960,9 +996,10 @@ handle_key() {
             fi
             NORM_CURSOR=0
             ;;
-        D) remove_host_from_file ;;
+        D) dig_host ;;
+        R) remove_host_from_file ;;
+        F) prompt_refresh ;;
         N) enter_scan_mode ;;
-        R) prompt_refresh ;;
         E) edit_hosts ;;
         Q) cleanup ;;
     esac

@@ -133,11 +133,12 @@ google.com
 | `I` | Sort by IP address (press again to reverse) |
 | `S` | Sort by status (press again to reverse) |
 | `T` | Cycle failure-time sort: Last Fail ↑ → ↓ → First Fail ↑ → ↓ |
-| `R` | Set refresh interval (default: 2 s) |
+| `F` | Set refresh interval (default: 2 s) |
 | `E` | Edit `hosts.txt` in nano; reloads on save |
 | `J` / `↓` | Move selection cursor down |
 | `K` / `↑` | Move selection cursor up |
-| `D` | Remove highlighted host from the hosts file |
+| `D` | Run `dig` on highlighted host; shows full DNS output |
+| `R` | Remove highlighted host from the hosts file |
 | `N` | Enter **scan mode** (discover live hosts on the current /24 subnet) |
 | `Q` / `ESC` | Quit |
 
@@ -157,6 +158,7 @@ In snapshot mode, hosts that went down remain visible in red with their timestam
 | `T` | Cycle failure-time sort: Last Fail ↑ → ↓ → First Fail ↑ → ↓ |
 | `J` / `↓` | Move selection cursor down |
 | `K` / `↑` | Move selection cursor up |
+| `D` | Run `dig` on highlighted host; shows full DNS output |
 | `A` | Add highlighted host to the active hosts file (DNS name as entry, IP as `# comment`) |
 | `P` | Toggle **snapshot mode** |
 | `B` | Toggle visibility of unchanged (dim) background hosts *(snapshot mode only)* |
