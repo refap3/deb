@@ -7,7 +7,6 @@
 mycloud.pi.hole      # NAS / Pi-hole
 
 # Raspberry Pis
-192.168.1.45         # Pi 45
 192.168.1.52         # Pi 52
 192.168.1.59         # Pi 59
 192.168.1.93         # Pi 93 (sudoku solver)
@@ -16,3 +15,15 @@ mycloud.pi.hole      # NAS / Pi-hole
 google.com
 8.8.8.8              # Google DNS
 1.1.1.1              # Cloudflare DNS
+192.168.1.72  # mycloud.pi.hole
+192.168.1.79  # Wiim.pi.hole
+192.168.1.90  # display-7219.pi.hole
+192.168.1.147  # ultrasonic.pi.hole
+192.168.1.63  # ROCK.pi.hole
+192.168.1.46  # deco4Upstairs.pi.hole
+192.168.1.141  # decoBasement2.pi.hole
+192.168.1.168  # rpzero2w.pi.hole
+192.168.1.169  # deco4Downstairs.pi.hole
+192.168.1.179  # GW-IKEA.pi.hole
+192.168.1.198  # pi.hole
+192.168.1.232  # HApwr.pi.hole
