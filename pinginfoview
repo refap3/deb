@@ -2,7 +2,7 @@
 # pinginfoview — terminal host-ping monitor
 # Usage: pinginfoview [hosts_file]
 
-VERSION="1.11"
+VERSION="1.12"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 HOSTS_FILE="${1:-${SCRIPT_DIR}/hosts.txt}"
 TMP_BASE="/tmp/pinginfoview_$$"
@@ -901,7 +901,9 @@ dig_host() {
     tput rmcup
     tput cnorm
     if ! command -v dig &>/dev/null; then
-        printf "dig not found — installing dnsutils…\n"
+        printf "dig not found — updating package index…\n"
+        sudo apt-get update 2>&1
+        printf "Installing dnsutils…\n"
         sudo apt-get install -y dnsutils 2>&1
         if ! command -v dig &>/dev/null; then
             printf "\nInstall failed. Press any key to return…"
