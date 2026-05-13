@@ -157,7 +157,7 @@ In snapshot mode, hosts that went down remain visible in red with their timestam
 | `T` | Cycle failure-time sort: Last Fail ↑ → ↓ → First Fail ↑ → ↓ |
 | `J` / `↓` | Move selection cursor down |
 | `K` / `↑` | Move selection cursor up |
-| `A` | Add highlighted host to the active hosts file |
+| `A` | Add highlighted host to the active hosts file (DNS name as entry, IP as `# comment`) |
 | `P` | Toggle **snapshot mode** |
 | `B` | Toggle visibility of unchanged (dim) background hosts *(snapshot mode only)* |
 | `N` | Exit scan mode, return to hosts-file view |

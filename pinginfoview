@@ -2,7 +2,7 @@
 # pinginfoview — terminal host-ping monitor
 # Usage: pinginfoview [hosts_file]
 
-VERSION="1.8"
+VERSION="1.9"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 HOSTS_FILE="${1:-${SCRIPT_DIR}/hosts.txt}"
 TMP_BASE="/tmp/pinginfoview_$$"
@@ -416,12 +416,6 @@ add_host_to_file() {
     local ip="${SCAN_DISPLAY_HOSTS[$SCAN_CURSOR]}"
     [[ -z "$ip" ]] && return
 
-    if grep -qF "$ip" "$HOSTS_FILE" 2>/dev/null; then
-        FLASH_MSG="${ip} already in $(basename "$HOSTS_FILE")"
-        FLASH_UNTIL=$(( $(date +%s) + 2 ))
-        return
-    fi
-
     # Find hostname from current scan state
     local name="" j
     for j in "${!SCAN_HOSTS[@]}"; do
@@ -431,13 +425,20 @@ add_host_to_file() {
         fi
     done
 
+    local entry="${name:-$ip}"
+    if grep -qF "$entry" "$HOSTS_FILE" 2>/dev/null; then
+        FLASH_MSG="${entry} already in $(basename "$HOSTS_FILE")"
+        FLASH_UNTIL=$(( $(date +%s) + 2 ))
+        return
+    fi
+
     if [[ -n "$name" && "$name" != "$ip" ]]; then
-        printf "%s  # %s\n" "$ip" "$name" >> "$HOSTS_FILE"
+        printf "%s  # %s\n" "$name" "$ip" >> "$HOSTS_FILE"
     else
         printf "%s\n" "$ip" >> "$HOSTS_FILE"
     fi
 
-    FLASH_MSG="Added ${ip} → $(basename "$HOSTS_FILE")"
+    FLASH_MSG="Added ${entry} → $(basename "$HOSTS_FILE")"
     FLASH_UNTIL=$(( $(date +%s) + 3 ))
 }
 
