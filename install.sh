@@ -27,6 +27,14 @@ fi
 if [ -d "$DEST/.git" ]; then
   echo "Updating deb repo at $DEST ..."
   git -C "$DEST" fetch --depth=1 origin master
+  # Only warn about local commits on full (non-shallow) clones.
+  # Shallow clones show a false diverge due to grafted history.
+  if [ ! -f "$DEST/.git/shallow" ]; then
+    LOCAL=$(git -C "$DEST" rev-list origin/master..HEAD --count 2>/dev/null || echo 0)
+    if [ "$LOCAL" -gt 0 ]; then
+      echo "Warning: $LOCAL local commit(s) will be overwritten by reset."
+    fi
+  fi
   git -C "$DEST" reset --hard origin/master
 else
   echo "Cloning deb repo into $DEST ..."
