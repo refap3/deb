@@ -2,7 +2,7 @@
 # pinginfoview — terminal host-ping monitor
 # Usage: pinginfoview [hosts_file]
 
-VERSION="1.12"
+VERSION="1.13"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 HOSTS_FILE="${1:-${SCRIPT_DIR}/hosts.txt}"
 TMP_BASE="/tmp/pinginfoview_$$"
@@ -851,7 +851,7 @@ draw() {
     done
 
     printf "\033[2K%s\n" "$hline"
-    printf "\033[2K${CD}[H]ost  [I]P  [S]tatus  [T]ime  [R]efresh  [E]dit  [D]=remove  [J/K/↑↓]=select  [N]=scan  [Q/ESC] Quit${RS}"
+    printf "\033[2K${CD}[H]ost  [I]P  [S]tatus  [T]ime  [F]refresh  [E]dit  [D]=dig  [R]=remove  [J/K/↑↓]=select  [N]=scan  [Q/ESC] Quit${RS}"
 }
 
 # ── key handlers ───────────────────────────────────────────────────────────
