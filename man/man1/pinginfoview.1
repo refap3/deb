@@ -1,4 +1,4 @@
-.TH PINGINFOVIEW 1 "2026-05-13" "deb repo v1.13" "User Commands"
+.TH PINGINFOVIEW 1 "2026-05-14" "deb repo v1.14" "User Commands"
 .SH NAME
 pinginfoview \- terminal host-ping monitor
 .SH SYNOPSIS
@@ -144,6 +144,9 @@ Pressing a sort key a second time reverses the direction (except
 which advances the cycle).
 Sort state is independent from normal-mode sort and resets to IP on each scan entry.
 The active subnet is auto\-detected from the machine's default-route interface.
+If auto\-detection fails (e.g. when connected through a WireGuard tunnel),
+a prompt appears asking for the subnet to scan (e.g.
+.BR 192.168.1 ).
 Reverse\-DNS names are resolved once per newly-discovered IP.
 .TP
 .B J / Down-arrow

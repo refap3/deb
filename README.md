@@ -145,6 +145,8 @@ google.com
 **Scan mode** (`N` to enter/exit)
 
 Ignores the hosts file and pings every address on the local /24 subnet.
+The subnet is auto-detected from the default-route interface.
+If detection fails (e.g. when connected through a WireGuard tunnel), a prompt appears to enter the subnet manually (e.g. `192.168.1`).
 Only responding hosts are shown, each with a green `✓`.
 Reverse-DNS names are resolved once per discovered IP.
 Columns match normal mode: HOST, IP, ST, OK/FAIL counts, and the two timestamp ranges (FAIL: FIRST→LAST, OK: FIRST→LAST).
