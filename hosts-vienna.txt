@@ -8,9 +8,14 @@
 # Servers
 hassio.ssb8.local    # Home Assistant Pi
 es.ssb8.local        # Windows Server (DC)
-192.168.1.119        # q1900 server
 
 # Internet
 google.com
 8.8.8.8              # Google DNS
 1.1.1.1              # Cloudflare DNS
+debdocker.ssb8.local  # 192.168.1.59
+192.168.1.60
+192.168.1.101
+synology.ssb8.local  # 192.168.1.116
+pihole.ssb8.local  # 192.168.1.198
+hwpwr.ssb8.local  # 192.168.1.231
