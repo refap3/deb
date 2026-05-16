@@ -22,3 +22,4 @@ decoBasement2.pi.hole  # 192.168.1.141
 deco4Downstairs.pi.hole  # 192.168.1.169
 GW-IKEA.pi.hole  # 192.168.1.179
 HApwr.pi.hole  # 192.168.1.232
+ROCK.pi.hole  # 192.168.1.63
